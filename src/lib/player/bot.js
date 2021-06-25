@@ -266,16 +266,16 @@ class Bot {
   }
 
   async _handlePlaylist(msg, arg, skip = false) {
-    const playlist = arg
+    let playlist = arg
     if (!playlist.songs.length) throw Error("No valid video in the playlist");
-    const songs = playlist.songs
-    const queue = this.getQueue(msg)
+    let songs = playlist.songs
+    let queue = this.getQueue(msg)
 
     if (queue) {
       this._addSongsToQueue(msg, songs, skip)
       if (skip) this.skip(msg)
     }else{
-      const song = songs.shift()
+      let song = songs.shift()
       queue = await this._newQueue(msg, song)
       if (songs.length) this._addSongsToQueue(msg, songs)
       songs.unshift(song)
@@ -284,7 +284,7 @@ class Bot {
     if (playlist.partial) {
       playlist.event.on('video', v => {
         if (!songs.find(song => song.id === v.id)) {
-          const song = new Song(v, msg.author)
+          let song = new Song(v, msg.author)
           this._addToQueue(msg, song, skip, false)
         }
       })
