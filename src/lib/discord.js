@@ -19,7 +19,7 @@ const bot = new DiscordBot(client)
 client.on('ready', async() => {
   console.log(`Logged in as ${client.user.tag}!`)
 
-  const guilds = await client.db.guilds.remove()
+  const guilds = await client.db.guilds.find()
   if (guilds.length > 0) {
     console.log('[SYSTEM] Restoring to registered guild if exists.')
     guilds.forEach(guild => {
