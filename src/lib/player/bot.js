@@ -7,8 +7,8 @@ const ytcore = require('ytdl-core-discord')
 const Queue = require('./queue')
 const Playlist = require('./playlist')
 const Song = require('./song')
-const ytdl = require('../parties/youtubedl')
-const ytsr = require('../parties/ytsearch')
+const ytdl = require('../../parties/youtubedl')
+const ytsr = require('../../parties/ytsearch')
 
 const isURL = string => {
   if (string.includes(" ")) return false;
@@ -50,13 +50,12 @@ class Bot {
     this.filters = ffmpegFilters
     this.options = options
 
-    client.on('voiceStateUpdate', (oldState, newState) => {
+    client.on("voiceStateUpdate", (oldState, newState) => {
       if (newState && newState.id === client.user.id && !newState.channelID) {
-        let queue = this.guildQueues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID)
-        if (!queue) return
-
-        let guildID = queue.connection.channel.guild.id
-        // Stop from guildID
+        let queue = this.guildQueues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID);
+        if (!queue) return;
+        let guildID = queue.connection.channel.guild.id;
+        try { this.stop(guildID) } catch { this._deleteQueue(guildID) }
       }
     })
 
@@ -69,6 +68,7 @@ class Bot {
     queue.skipped = true
     queue.dispatcher.end()
     msg.react('🤝')
+    this._saveToDatabase(msg)
     return queue
   }
 
@@ -103,6 +103,7 @@ class Bot {
     queue.pause = true;
     queue.dispatcher.pause(true);
     msg.react('🤝')
+    this._saveToDatabase(msg)
     return queue;
   }
 
@@ -114,6 +115,7 @@ class Bot {
       queue.pause = false;
       queue.dispatcher.resume();
       msg.react('🤝')
+      this._saveToDatabase(msg)
       return queue;
     } catch (er) {
       console.log(er)
@@ -126,6 +128,7 @@ class Bot {
     queue.volume = percent;
     queue.dispatcher.setVolume(queue.volume / 100);
     msg.react('🤝')
+    this._saveToDatabase(msg)
     return queue
   }
 
@@ -138,6 +141,7 @@ class Bot {
       [queue.songs[i], queue.songs[j]] = [queue.songs[j], queue.songs[i]];
     }
     queue.songs.unshift(playing);
+    this._saveToDatabase(msg)
     return queue;
   }
 
@@ -165,9 +169,10 @@ class Bot {
     queue.beginTime = time;
     await this._playSong(msg, false);
     msg.react('🤝')
+    this._saveToDatabase(msg)
   }
 
-  async setRepeatMode(msg, mode = 2) {
+  async setRepeatMode(msg, mode = 0) {
     let queue = this.getQueue(msg);
     if (!queue) throw new Error("NotPlaying");
     mode = parseInt(mode, 10);
@@ -187,7 +192,7 @@ class Bot {
     await msg.channel.send(
       this._embedMessage(false, content)
     )
-
+    this._saveToDatabase(msg)
     return queue.repeatMode;
   }
 
@@ -317,6 +322,7 @@ class Bot {
     }
     queue.skipped = false
     queue.beginTime = 0
+    this._saveToDatabase(msg)
     await this._playSong(msg)
   }
 
@@ -338,6 +344,19 @@ class Bot {
   async _createStream(queue) {
     const song = queue.songs[0]
     return song.streamUrl
+  }
+
+  _saveToDatabase(msg) {
+    const queue = this.getQueue(msg)
+    if(!queue) return
+
+    const db = msg.client.db
+    db.guilds.update({guildId:msg.guild.id}, {
+      $set: {
+        queue: queue.toDatabase()
+      }
+    })
+    console.log('[DATABASE] Added new song.')
   }
 
   getQueue(msg) {
@@ -362,6 +381,8 @@ class Bot {
       false,
       content
     ))
+
+    this._saveToDatabase(msg)
     return queue
   }
 
@@ -384,6 +405,7 @@ class Bot {
       this._deleteQueue(msg)
     })
     await this._playSong(msg)
+    this._saveToDatabase(msg)
     return queue
   }
 
@@ -396,8 +418,15 @@ class Bot {
     if (queue.stream) try {
       queue.stream = null
     } catch {}
-    if (typeof msg === 'string') this.guildQueues.delete(msg)
-    else if (msg && msg.guild) this.guildQueues.delete(msg.guild.id)
+    if (typeof msg === 'string') {
+      this.guildQueues.delete(msg)
+      msg.client.db.guilds.update({guildId:msg}, {$set:{queue:null}})
+    }
+    else if (msg && msg.guild) {
+      this.guildQueues.delete(msg.guild.id)
+      msg.client.db.guilds.update({guildId:msg.guild.id}, {$set:{queue:null}})
+    }
+    console.log('[DATABASE] Deleted song.')
   }
 
   _addSongsToQueue(msg, songs, unshift = false) {

@@ -1,14 +1,32 @@
 const fs = require('fs')
 const path = require('path')
+const {
+  Collection
+} = require('discord.js')
 
 const commandsPath = path.join(__dirname, '')
-let commands = {}
+const commands = new Collection()
 
-fs.readdirSync(commandsPath).forEach(filename => {
-  const name = filename.replace('.js', '')
-  if (name !== 'index') {
-    commands[name] = require(`./${name}`)
-  }
-})
+const saveCommand = (path) => {
+  const command = require(path)
+  commands.set(command.name, command)
+}
+
+const isFileJs = (filename) => {
+  return filename.endsWith('.js')
+}
+
+const loadCommands = (path = commandsPath) => {
+  fs.readdirSync(path).forEach(f => {
+    if (f === 'index.js') return
+    if (isFileJs(f)) {
+      saveCommand(`${path}/${f}`)
+    } else {
+      loadCommands(`${path}/${f}`)
+    }
+  })
+}
+
+loadCommands(commandsPath)
 
 module.exports = commands

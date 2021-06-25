@@ -1,3 +1,3 @@
-const discord = require('./libs/discord')
+const Discord = require('./lib/discord')
 
-discord.start()
+Discord.start()
