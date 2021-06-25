@@ -12,7 +12,7 @@ module.exports = {
     }
     const mode = args[0].toLowerCase();
     if (modes[mode]) {
-      return await bot.setRepeatMode(msg, modes[mode]);
+      bot.setRepeatMode(msg, modes[mode]);
     }
   }
 }

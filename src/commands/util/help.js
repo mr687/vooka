@@ -24,7 +24,7 @@ module.exports = {
       n += 1
     })
 
-    await msg.channel.send(
+    msg.channel.send(
       new MessageEmbed()
       .setColor('#97ffe5')
       .setTitle('**Bot Commands**')

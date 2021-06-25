@@ -3,12 +3,11 @@ const {
   Collection,
   MessageEmbed
 } = require('discord.js')
-const ytcore = require('ytdl-core-discord')
 const Queue = require('./queue')
 const Playlist = require('./playlist')
 const Song = require('./song')
-const ytdl = require('../../parties/youtubedl')
-const ytsr = require('../../parties/ytsearch')
+const ytSearch = require('yt-search')
+const {getInfo} = require('ytdl-getinfo')
 
 const isURL = string => {
   if (string.includes(" ")) return false;
@@ -22,6 +21,14 @@ const isURL = string => {
   }
   return true;
 }
+
+const ytsr = async(q, n = 10) => {
+  const result = await ytSearch(q)
+  const videos = result.videos.slice(0,n)
+  return videos
+}
+
+const ytdlConfig = ['--default-search=ytsearch', '-i', '--format=bestaudio']
 
 const ffmpegFilters = {
   "3d": "apulsator=hz=0.125",
@@ -77,7 +84,7 @@ class Bot {
 
     try {
       const resolvedSong = await this._resolveSong(msg, song)
-      await this._handleSong(msg, resolvedSong)
+      this._handleSong(msg, resolvedSong)
     } catch (error) {
       console.log(error)
     }
@@ -148,7 +155,7 @@ class Bot {
   async disconnect(msg) {
     const queue = this.getQueue(msg)
     if (!queue) return
-    await queue.connection.channel.leave()
+    queue.connection.channel.leave()
     this._deleteQueue(msg)
     msg.react('🤝')
   }
@@ -167,7 +174,7 @@ class Bot {
     let queue = this.getQueue(msg);
     if (!queue) throw new Error("NotPlaying");
     queue.beginTime = time;
-    await this._playSong(msg, false);
+    this._playSong(msg, false);
     msg.react('🤝')
     this._saveToDatabase(msg)
   }
@@ -189,7 +196,7 @@ class Bot {
       content = `Looping is now **disabled**.`
     }
 
-    await msg.channel.send(
+    msg.channel.send(
       this._embedMessage(false, content)
     )
     this._saveToDatabase(msg)
@@ -245,9 +252,9 @@ class Bot {
         if (queue.stream) queue.stream = null
         queue.stream = stream
 
-        if (withNotify) {
+        if (withNotify && typeof msg !== 'string') {
           const content = `[${song.name}](${song.url}) [<@${msg.author.id}>]`
-          await msg.channel.send(this._embedMessage(
+          msg.channel.send(this._embedMessage(
             "Now Playing",
             content
           ))
@@ -259,12 +266,35 @@ class Bot {
   }
 
   async _handlePlaylist(msg, arg, skip = false) {
-    let playlist
-    if (typeof arg === 'object') playlist = arg
+    const playlist = arg
+    if (!playlist.songs.length) throw Error("No valid video in the playlist");
+    const songs = playlist.songs
+    const queue = this.getQueue(msg)
+
+    if (queue) {
+      this._addSongsToQueue(msg, songs, skip)
+      if (skip) this.skip(msg)
+    }else{
+      const song = songs.shift()
+      queue = await this._newQueue(msg, song)
+      if (songs.length) this._addSongsToQueue(msg, songs)
+      songs.unshift(song)
+    }
+
+    if (playlist.partial) {
+      playlist.event.on('video', v => {
+        if (!songs.find(song => song.id === v.id)) {
+          const song = new Song(v, msg.author)
+          this._addToQueue(msg, song, skip, false)
+        }
+      })
+      playlist.event.on('done', v => {
+      })
+    }
   }
 
   async _searchSong(msg, name, multiple = false) {
-    const results = await ytsr.search(name, 10)
+    const results = await ytsr(name, 10)
     if (!results.length) return
     const result = results[0]
     if (multiple) {
@@ -278,8 +308,8 @@ class Bot {
       if (isNaN(index) || index > results.length || index < 1) throw new Error()
       result = results[index - 1]
     }
-    const info = await ytdl(result.url)
-    const song = new Song(info, msg.author)
+    const info = await getInfo(result.url, ytdlConfig)
+    const song = new Song(info.items[0], msg.author)
     return song
   }
 
@@ -288,16 +318,18 @@ class Bot {
     if (song instanceof Song) return song
     if (typeof song === 'object') return new Song(song, msg.author)
     if (isURL(song)) {
-      const info = await ytdl(song)
-      if (info.entries) return info.entries.map(i => new Song(i, msg.author, true))
-      return new Song(info, msg.author, true)
+      const info = await getInfo(song, ytdlConfig)
+      if (info.items.length > 1) {
+        return new Playlist(info, msg.author)
+      }
+      return new Song(info, msg.author)
     }
     return this._resolveSong(msg, await this._searchSong(msg, song))
   }
 
   async _handleSong(msg, song, skip = false) {
     if (!song) return
-    if (Array.isArray(song)) {
+    if (Array.isArray(song) || song instanceof Playlist) {
       this._handlePlaylist(msg, song, skip)
     } else if (this.getQueue(msg)) {
       let queue = this._addToQueue(msg, song, skip)
@@ -323,7 +355,7 @@ class Bot {
     queue.skipped = false
     queue.beginTime = 0
     this._saveToDatabase(msg)
-    await this._playSong(msg)
+    this._playSong(msg)
   }
 
   _handlePlayingError(msg, queue, e = null) {
@@ -350,13 +382,18 @@ class Bot {
     const queue = this.getQueue(msg)
     if(!queue) return
 
-    const db = msg.client.db
-    db.guilds.update({guildId:msg.guild.id}, {
+    let guildId
+    if (typeof msg === 'string') {
+      guildId = msg
+    }else{
+      guildId = msg.guild.id
+    }
+    const db = this.client.db
+    db.guilds.update({guildId}, {
       $set: {
         queue: queue.toDatabase()
       }
     })
-    console.log('[DATABASE] Added new song.')
   }
 
   getQueue(msg) {
@@ -365,7 +402,7 @@ class Bot {
     return this.guildQueues.get(msg.guild.id)
   }
 
-  async _addToQueue(msg, song, unshift = false) {
+  async _addToQueue(msg, song, unshift = false, notify = true) {
     const queue = this.getQueue(msg)
     if (!queue) throw new Error('NotPlaying')
     if (!song) throw new Error('NoSong')
@@ -376,11 +413,13 @@ class Bot {
       queue.songs.push(song)
     }
 
-    const content = `Queued [${song.name}](${song.url}) [<@${msg.author.id}>]`
-    await msg.channel.send(this._embedMessage(
-      false,
-      content
-    ))
+    if (notify){
+      const content = `Queued [${song.name}](${song.url}) [<@${msg.author.id}>]`
+      msg.channel.send(this._embedMessage(
+        false,
+        content
+      ))
+    }
 
     this._saveToDatabase(msg)
     return queue
@@ -388,7 +427,7 @@ class Bot {
 
   async _newQueue(msg, song, retry = false) {
     const voice = msg.member.voice.channel
-    if (!voice) await msg.channel.send('You are not in the voice channel.')
+    if (!voice) msg.channel.send('You are not in the voice channel.')
     const queue = new Queue(msg, song)
     this.guildQueues.set(msg.guild.id, queue)
 
@@ -396,15 +435,15 @@ class Bot {
       queue.connection = await voice.join()
     } catch (e) {
       this._deleteQueue(msg)
-      await msg.channel.send('Vooka cannot join the voice channel!')
+      msg.channel.send('Vooka cannot join the voice channel!')
       if (retry) throw e
       return this._newQueue(msg, song, true)
     }
     queue.connection.on('error', async (err) => {
-      await msg.channel.send('There is a problem with Discord Voice Connection.\nPlease try again! Sorry for the interruption!')
+      msg.channel.send('There is a problem with Discord Voice Connection.\nPlease try again! Sorry for the interruption!')
       this._deleteQueue(msg)
     })
-    await this._playSong(msg)
+    this._playSong(msg)
     this._saveToDatabase(msg)
     return queue
   }
@@ -420,13 +459,12 @@ class Bot {
     } catch {}
     if (typeof msg === 'string') {
       this.guildQueues.delete(msg)
-      msg.client.db.guilds.update({guildId:msg}, {$set:{queue:null}})
+      this.client.db.guilds.update({guildId:msg}, {$set:{queue:null}})
     }
     else if (msg && msg.guild) {
       this.guildQueues.delete(msg.guild.id)
-      msg.client.db.guilds.update({guildId:msg.guild.id}, {$set:{queue:null}})
+      this.client.db.guilds.update({guildId:msg.guild.id}, {$set:{queue:null}})
     }
-    console.log('[DATABASE] Deleted song.')
   }
 
   _addSongsToQueue(msg, songs, unshift = false) {
@@ -439,6 +477,12 @@ class Bot {
     } else {
       queue.songs.push(...songs);
     }
+
+    const content = `Added ${songs.length} and mores to queue.`
+    msg.channel.send(this._embedMessage(
+      false,
+      content
+    ))
     return queue;
   }
 
@@ -449,6 +493,19 @@ class Bot {
       .setDescription(content)
     if (title !== false) embed.setTitle(head)
     return embed
+  }
+
+  async _handleWakeUpFromRestartServer(guild) {
+    const queue = guild.queue
+    const voiceChannel = this.client.channels.cache.get(guild.voiceChannelId)
+    if (!voiceChannel) return
+
+    const oQueue = new Queue()
+    oQueue.import(queue)
+    oQueue.connection = await voiceChannel.join()
+    this.guildQueues.set(guild.guildId, oQueue)
+
+    this._playSong(guild.guildId, false)
   }
 }
 module.exports = Bot

@@ -13,13 +13,13 @@ module.exports = {
     const time = parseInt(req)
 
     if (isNaN(time)) {
-      return await msg.channel.send(
+      return msg.channel.send(
         new MessageEmbed()
         .setColor('#97ffe5')
         .setDescription('Parameter <second> must be number.')
       )
     }
 
-    return await bot.seek(msg, time)
+    bot.seek(msg, time)
   }
 }

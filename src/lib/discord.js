@@ -6,7 +6,6 @@ const Guild = require('./guild')
 require('dotenv').config()
 
 const client = new Discord.Client()
-const bot = new DiscordBot(client)
 const db = monk(process.env.MONGODB_URI)
 
 client.db = {
@@ -15,8 +14,20 @@ client.db = {
 
 client.commands = require('../commands')
 
-client.on('ready', () => {
+const bot = new DiscordBot(client)
+
+client.on('ready', async() => {
   console.log(`Logged in as ${client.user.tag}!`)
+
+  const guilds = await client.db.guilds.remove()
+  if (guilds.length > 0) {
+    console.log('[SYSTEM] Restoring to registered guild if exists.')
+    guilds.forEach(guild => {
+      if (guild.queue) {
+        bot._handleWakeUpFromRestartServer(guild)
+      }
+    })
+  }
 })
 
 client.on('message', async (msg) => {
@@ -33,8 +44,8 @@ client.on('message', async (msg) => {
   msg.guild.prefix = prefix
 
   if (!guild) {
-    const guildO = new Guild(msg.guild)
-    await client.db.guilds.insert(guildO.toJson())
+    const guildO = new Guild(msg)
+    client.db.guilds.insert(guildO.toJson())
     console.log('[DATABASE] Saved new guild to database.')
   }
   
@@ -53,7 +64,7 @@ client.on('message', async (msg) => {
       content += `\nThe proper usage would be: \`${prefix}${command.name} ${command.usage}\``
     }
 
-    return await msg.channel.send(
+    return msg.channel.send(
       new Discord.MessageEmbed()
       .setColor('#97ffe5')
       .setDescription(content)
@@ -62,15 +73,15 @@ client.on('message', async (msg) => {
 
   if (command.needBot) {
     if (command.arg) {
-      return await command.execute(bot, msg, args)
+      command.execute(bot, msg, args)
     } else {
-      return await command.execute(bot, msg)
+      command.execute(bot, msg)
     }
   } else {
     if (command.arg) {
-      return await command.execute(msg, args)
+      command.execute(msg, args)
     } else {
-      return await command.execute(msg)
+      command.execute(msg)
     }
   }
 

@@ -1,9 +1,9 @@
 class Queue {
-  constructor(message, song) {
+  constructor(message=null, song = null) {
     this.dispatcher = null
     this.connection = null
     this.volume = 100
-    this.songs = [song]
+    this.songs = song? [song] : []
     this.stopped = false
     this.skipped = false
     this.playing = true
@@ -11,10 +11,22 @@ class Queue {
     this.repeatMode = 0
     this.autoplay = false
     this.filter = null
-    this.initMessage = message
+    this.initMessage = message || null
     this.stream = null
     this.beginTime = 0
     this.previousSongs = []
+  }
+
+  import(o) {
+    let info = o
+    if (typeof o === 'string') info = JSON.parse(o)
+    Object.keys(info).forEach(key => {
+      if (!key) return
+      if (this[key]) {
+        this[key]=info[key]
+      }
+    })
+    return this
   }
 
   toDatabase() {

@@ -7,6 +7,6 @@ module.exports = {
   needBot: true,
   async execute(bot, msg, args) {
     const song = args.join(' ')
-    await bot.play(msg, song)
+    bot.play(msg, song)
   }
 }

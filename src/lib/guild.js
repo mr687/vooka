@@ -1,10 +1,11 @@
 const {Collection} = require('discord.js')
 
 class Guild{
-  constructor (guild) {
-    this.guildId = guild.id
-    this.prefix = guild.prefix || '-'
+  constructor (msg) {
+    this.guildId = msg.guild.id
+    this.prefix = msg.guild.prefix || '-'
     this.queue = null
+    this.voiceChannelId = msg.member.voice.channel.id || null
   }
 
   toJson() {

@@ -12,7 +12,7 @@ module.exports = {
     const guildId = msg.guild.id
     const db = msg.client.db
 
-    await db.guilds.findOneAndUpdate({
+    db.guilds.findOneAndUpdate({
       guildId
     }, {
       $set: {
@@ -20,7 +20,7 @@ module.exports = {
       }
     })
 
-    await msg.channel.send(
+    msg.channel.send(
       new MessageEmbed()
       .setColor('#97ffe5')
       .setDescription(`Prefix changed to **${prefix}**.`)

@@ -8,6 +8,6 @@ module.exports = {
   async execute(bot, msg, args) {
     const req = parseInt(args[0])
     if (isNaN(req)) return
-    return await bot.setVolume(msg, req)
+    bot.setVolume(msg, req)
   }
 }

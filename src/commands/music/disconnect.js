@@ -4,6 +4,6 @@ module.exports = {
   alias: ['dc'],
   needBot: true,
   async execute(bot, msg) {
-    return await bot.disconnect(msg)
+    bot.disconnect(msg)
   }
 }

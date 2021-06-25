@@ -11,14 +11,14 @@ module.exports = {
   adminOnly: true,
   async execute(msg, args) {
     if (msg.author.id === adminId) {
-      await msg.channel.send(
+      msg.channel.send(
         new MessageEmbed()
         .setColor('#97ffe5')
         .setDescription('Restarting server.')
       )
       process.exit()
     } else {
-      await msg.channel.send(
+      msg.channel.send(
         new MessageEmbed()
         .setColor('#97ffe5')
         .setDescription('You have not permission to this command.')
