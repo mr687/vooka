@@ -57,7 +57,7 @@ client.on('message', async (msg) => {
     client.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName))
   if (!command) return
 
-  if (command.arg && !args.length) {
+  if (command.arg && !args.length && command.arg !== 'optional') {
     let content = `You didn't provide any arguments, ${msg.author}!`
 
     if (command.usage) {
