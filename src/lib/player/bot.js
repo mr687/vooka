@@ -245,7 +245,7 @@ class Bot {
         const stream = await this._createStream(queue)
         queue.dispatcher = queue.connection.play(stream, {
             volume: queue.volume / 100,
-            highWaterMark: 1 << 25,
+            highWaterMark: 1,
             fec: true,
             plp: 30,
             bitrate: 'auto',
