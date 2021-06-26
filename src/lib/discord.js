@@ -42,14 +42,16 @@ client.on('message', async (msg) => {
   }
   
   msg.guild.prefix = prefix
+  
+  if (!msg.content.startsWith(prefix)) return
+  if (!msg.member.voice.channel) return msg.channel.send('You have to join to voice channel.')
 
   if (!guild) {
     const guildO = new Guild(msg)
     client.db.guilds.insert(guildO.toJson())
     console.log('[DATABASE] Saved new guild to database.')
   }
-  
-  if (!msg.content.startsWith(prefix)) return
+
   const args = msg.content.slice(prefix.length).trim().split(/ +/g)
   const commandName = args.shift().toLowerCase()
 

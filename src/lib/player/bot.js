@@ -28,7 +28,12 @@ const ytsr = async(q, n = 10) => {
   return videos
 }
 
-const ytdlConfig = ['--default-search=ytsearch', '-i', '--format=bestaudio']
+const ytdlConfig = [
+  '--default-search=ytsearch',
+  '-i',
+  '--format=bestaudio',
+  `--proxy=${process.env.PROXY || null}`
+]
 
 const ffmpegFilters = {
   "3d": "apulsator=hz=0.125",
