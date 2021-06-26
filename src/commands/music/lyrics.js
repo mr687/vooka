@@ -1,5 +1,5 @@
 const { MessageEmbed } = require("discord.js");
-const lyricsFinder = require("findthelyrics");
+const lyricsFinder = require("@youka/lyrics");
 
 module.exports = {
   name: 'lyrics',
@@ -23,18 +23,13 @@ module.exports = {
     let lyrics = "Not Found!"
 
     if (track) {
-      lyricsFinder.find(track ,function(err, resp) {
-          if (!err) {
-              lyrics = resp
-              msg.channel.send(
-                new MessageEmbed()
-                .setColor('#97ffe5')
-                .setTitle('Lyrics')
-                .setDescription(lyrics)
-              )
-          } else {
-          }
-      });
+      lyrics = await lyricsFinder(track)
     }
+    msg.channel.send(
+      new MessageEmbed()
+      .setColor('#97ffe5')
+      .setTitle('Lyrics')
+      .setDescription(lyrics)
+    )
   }
 }

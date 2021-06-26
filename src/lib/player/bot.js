@@ -84,11 +84,11 @@ class Bot {
     return queue
   }
 
-  async play(msg, song) {
+  async play(msg, song, multiple = false) {
     if (!song) return
 
     try {
-      const resolvedSong = await this._resolveSong(msg, song)
+      const resolvedSong = await this._resolveSong(msg, song, multiple)
       this._handleSong(msg, resolvedSong)
     } catch (error) {
       console.log(error)
@@ -318,7 +318,7 @@ class Bot {
     return song
   }
 
-  async _resolveSong(msg, song) {
+  async _resolveSong(msg, song, multiple = false) {
     if (!song) return
     if (song instanceof Song) return song
     if (typeof song === 'object') return new Song(song, msg.author)
@@ -327,9 +327,11 @@ class Bot {
       if (info.items.length > 1) {
         return new Playlist(info, msg.author)
       }
-      return new Song(info, msg.author)
+      if (info.items[0]) {
+        return new Song(info.items[0], msg.author)
+      }
     }
-    return this._resolveSong(msg, await this._searchSong(msg, song))
+    return this._resolveSong(msg, await this._searchSong(msg, song, multiple))
   }
 
   async _handleSong(msg, song, skip = false) {
