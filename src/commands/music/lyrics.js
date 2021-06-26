@@ -12,7 +12,7 @@ module.exports = {
     if (!queue) return
 
     let track = null
-    if (args) {
+    if (args && args.length > 0) {
       track = args.join(' ')
     }else{
       const currentSong = queue.songs[0] || null
@@ -23,19 +23,18 @@ module.exports = {
     let lyrics = "Not Found!"
 
     if (track) {
-      ftl.find(track ,function(err, resp) {
+      lyricsFinder.find(track ,function(err, resp) {
           if (!err) {
               lyrics = resp
+              msg.channel.send(
+                new MessageEmbed()
+                .setColor('#97ffe5')
+                .setTitle('Lyrics')
+                .setDescription(lyrics)
+              )
           } else {
           }
       });
     }
-    
-    msg.channel.send(
-      new MessageEmbed()
-      .setColor('#97ffe5')
-      .setTitle('Lyrics')
-      .setDescription(lyrics)
-    )
   }
 }
