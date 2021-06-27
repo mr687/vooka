@@ -34,7 +34,7 @@ client.on('message', async (msg) => {
   if (msg.author.bot || !msg.guild || !msg.content) return
 
   let prefix = '-'
-  const guild = await client.db.guilds.findOne({
+  const guild = await client.db.guilds.find({
     guildId: msg.guild.id
   })
   if (guild) {

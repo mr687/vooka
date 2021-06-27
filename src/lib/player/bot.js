@@ -8,6 +8,7 @@ const Playlist = require('./playlist')
 const Song = require('./song')
 const ytSearch = require('yt-search')
 const {getInfo} = require('ytdl-getinfo')
+const spotify = require('spotify-url-info')
 require('dotenv').config()
 
 const isURL = string => {
@@ -21,6 +22,17 @@ const isURL = string => {
     return false
   }
   return true;
+}
+
+
+const spotifySongRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:track\/|\?uri=spotify:track:)((\w|-){22})/;
+const spotifyPlaylistRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:playlist\/|\?uri=spotify:playlist:)((\w|-){22})/;
+const spotifyAlbumRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:album\/|\?uri=spotify:album:)((\w|-){22})/;
+const urlSpotifyType = (query) => {
+  if (spotifySongRegex.test(query)) return 'spotify_song';
+  if (spotifyAlbumRegex.test(query)) return 'spotify_album';
+  if (spotifyPlaylistRegex.test(query)) return 'spotify_playlist';
+  return false;
 }
 
 const ytsr = async(q, n = 10) => {
@@ -258,6 +270,9 @@ class Bot {
 
   async _handlePlaylist(msg, arg, skip = false) {
     let playlist = arg
+    if (Array.isArray(arg)) {
+      playlist = new Playlist(arg, msg.author)
+    }
     if (!playlist.songs.length) throw Error("No valid video in the playlist");
     let songs = playlist.songs
     let queue = this.getQueue(msg)
@@ -331,6 +346,41 @@ class Bot {
     if (song instanceof Song) return song
     if (typeof song === 'object') return new Song(song, msg.author)
     if (isURL(song)) {
+      if (urlSpotifyType(song) === 'spotify_song') {
+        const spotifyData = await spotify.getData(song)
+        if (spotifyData) {
+          let q = spotifyData.name
+          if (spotifyData.artists[0]) {
+            q += ` - ${spotifyData.artists[0].name}`
+          }
+          const searchFromYts = await ytsr(q, 1)
+          if (searchFromYts && searchFromYts[0]) {
+            song = searchFromYts[0].url
+          }
+        }
+      }else if(['spotify_playlist', 'spotify_album'].includes(urlSpotifyType(song))) {
+        // const spotifyPlaylist = await spotify.getData(song)
+        // if (spotifyPlaylist) {
+        //   return await spotifyPlaylist.tracks.items.map(async (item) => {
+        //     let q = item.name || item.track.name
+        //     if (item.artists && items.artists[0]) {
+        //       q += ` - ${items.artists[0].name}`
+        //     }
+        //     if (item.track.artists && item.track.artists[0]) {
+        //       q += ` - ${item.track.artists[0].name}`
+        //     }
+        //     const searchFromYts = await ytsr(q, 1)
+        //     if (searchFromYts && searchFromYts[0]) {
+        //       const url = searchFromYts[0].url
+        //       const info = await getInfo(url, ytdlConfig)
+        //       if (info.items && info.items[0]) {
+        //         return new Song(info.items[0], msg.author)
+        //       }
+        //     }
+        //   })
+        // }
+      }
+
       const info = await getInfo(song, ytdlConfig)
       if (info.items.length > 1) {
         return new Playlist(info, msg.author)
@@ -492,7 +542,6 @@ class Bot {
     } else {
       queue.songs.push(...songs);
     }
-
     const content = `Added ${songs.length} and mores to queue.`
     msg.channel.send(this._embedMessage(
       false,

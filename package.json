@@ -16,6 +16,8 @@
     "ffmpeg-static": "^4.4.0",
     "findlyrics": "github:mr687/findlyrics",
     "monk": "^7.3.4",
+    "opusscript": "0.0.8",
+    "spotify-url-info": "^2.2.3",
     "yt-search": "^2.9.0",
     "ytdl-getinfo": "^1.1.0"
   },

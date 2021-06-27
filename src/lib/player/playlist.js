@@ -9,6 +9,11 @@ class Playlist {
     this.songs = []
     this.partial = playlist.partial || false
     this.event = playlist || null
+    if (Array.isArray(playlist)) {
+      playlist.forEach(song => {
+        this.songs.push(song)
+      })
+    }
     if (playlist.items) {
       playlist.items.forEach(song => {
         const newSong = new Song(song, user)
