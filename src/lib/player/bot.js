@@ -369,7 +369,7 @@ class Bot {
                 if (info.artists[0]) {
                   artist = info.artists[0]
                 }
-                return await this._searchSong(msg, `${title} - ${artist}`, false, true)
+                return await this._searchSong(msg, `${title} music`, false, true)
               })
             )
           }else{
@@ -380,7 +380,7 @@ class Bot {
                 if (info.track.artists[0]) {
                   artist = info.track.artists[0]
                 }
-                return await this._searchSong(msg, `${title} - ${artist}`, false, true)
+                return await this._searchSong(msg, `${title} music`, false, true)
               })
             )
           }

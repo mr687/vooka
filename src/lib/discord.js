@@ -33,12 +33,12 @@ client.on('ready', async() => {
 client.on('message', async (msg) => {
   if (msg.author.bot || !msg.guild || !msg.content) return
 
-  let prefix = '-'
-  const guild = await client.db.guilds.find({
+  let prefix = process.env.PREFIX || '-'
+  const guild = await client.db.guilds.findOne({
     guildId: msg.guild.id
   })
   if (guild) {
-    prefix = guild.prefix || '-'
+    prefix = guild.prefix || prefix
   }
   
   msg.guild.prefix = prefix
@@ -46,7 +46,7 @@ client.on('message', async (msg) => {
   if (!msg.content.startsWith(prefix)) return
   if (!msg.member.voice.channel) return msg.channel.send('You have to join to voice channel.')
 
-  if (!guild.length) {
+  if (guild) {
     const guildO = new Guild(msg)
     client.db.guilds.insert(guildO.toJson())
     console.log('[DATABASE] Saved new guild to database.')
