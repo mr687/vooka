@@ -33,12 +33,12 @@ client.on('ready', async() => {
 client.on('message', async (msg) => {
   if (msg.author.bot || !msg.guild || !msg.content) return
 
-  let prefix = '='
+  let prefix = '-'
   const guild = await client.db.guilds.find({
     guildId: msg.guild.id
   })
   if (guild) {
-    prefix = guild.prefix || '='
+    prefix = guild.prefix || '-'
   }
   
   msg.guild.prefix = prefix
