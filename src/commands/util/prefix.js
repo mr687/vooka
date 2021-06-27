@@ -12,13 +12,12 @@ module.exports = {
     const guildId = msg.guild.id
     const db = msg.client.db
 
-    db.guilds.findOneAndUpdate({
-      guildId
-    }, {
-      $set: {
-        prefix
+    db.guilds.update(
+      {guildId},
+      {
+        $set: { prefix }
       }
-    })
+    )
 
     msg.channel.send(
       new MessageEmbed()
