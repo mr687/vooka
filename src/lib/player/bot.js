@@ -7,32 +7,32 @@ const Queue = require('./queue')
 const Playlist = require('./playlist')
 const Song = require('./song')
 const ytSearch = require('yt-search')
-const {getInfo} = require('ytdl-getinfo')
+const ytInfo = require('ytdl-getinfo')
 const spotify = require('spotify-url-info')
 require('dotenv').config()
 
 const isURL = string => {
-  if (string.includes(" ")) return false;
+  if (string.includes(" ")) return false
   try {
-    const url = new URL(string);
+    const url = new URL(string)
     if (!["https:", "http:"].includes(url.protocol) ||
       url.origin === "null" || !url.host
-    ) return false;
+    ) return false
   } catch {
     return false
   }
-  return true;
+  return true
 }
 
 
-const spotifySongRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:track\/|\?uri=spotify:track:)((\w|-){22})/;
-const spotifyPlaylistRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:playlist\/|\?uri=spotify:playlist:)((\w|-){22})/;
-const spotifyAlbumRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:album\/|\?uri=spotify:album:)((\w|-){22})/;
+const spotifySongRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:track\/|\?uri=spotify:track:)((\w|-){22})/
+const spotifyPlaylistRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:playlist\/|\?uri=spotify:playlist:)((\w|-){22})/
+const spotifyAlbumRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:album\/|\?uri=spotify:album:)((\w|-){22})/
 const urlSpotifyType = (query) => {
-  if (spotifySongRegex.test(query)) return 'spotify_song';
-  if (spotifyAlbumRegex.test(query)) return 'spotify_album';
-  if (spotifyPlaylistRegex.test(query)) return 'spotify_playlist';
-  return false;
+  if (spotifySongRegex.test(query)) return 'spotify_song'
+  if (spotifyAlbumRegex.test(query)) return 'spotify_album'
+  if (spotifyPlaylistRegex.test(query)) return 'spotify_playlist'
+  return false
 }
 
 const ytsr = async(q, n = 10) => {
@@ -62,9 +62,9 @@ class Bot {
 
     client.on("voiceStateUpdate", (oldState, newState) => {
       if (newState && newState.id === client.user.id && !newState.channelID) {
-        let queue = this.guildQueues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID);
-        if (!queue) return;
-        let guildID = queue.connection.channel.guild.id;
+        let queue = this.guildQueues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID)
+        if (!queue) return
+        let guildID = queue.connection.channel.guild.id
         try { this.stop(guildID) } catch { this._deleteQueue(guildID) }
       }
     })
@@ -84,18 +84,14 @@ class Bot {
 
   async play(msg, song, multiple = false) {
     if (!song) return
-
-    try {
-      const resolvedSong = await this._resolveSong(msg, song, multiple)
-      this._handleSong(msg, resolvedSong)
-    } catch (error) {
-      console.log(error)
-    }
+    this._resolveSong(msg, song, multiple)
+      .then(result => this._handleSong(msg, result))
+      .catch(e => console.log(e))
   }
 
   stop(msg) {
     const queue = this.getQueue(msg)
-    if (!queue) throw new Error("NotPlaying");
+    if (!queue) throw new Error("NotPlaying")
     queue.stopped = true
     if (queue.dispatcher) {
       try {
@@ -107,52 +103,52 @@ class Bot {
   }
 
   pause(msg) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    queue.playing = false;
-    queue.pause = true;
-    queue.dispatcher.pause(true);
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    queue.playing = false
+    queue.pause = true
+    queue.dispatcher.pause(true)
     msg.react('🤝')
     this._saveToDatabase(msg)
-    return queue;
+    return queue
   }
 
   resume(msg) {
     try {
-      let queue = this.getQueue(msg);
-      if (!queue) throw new Error("NotPlaying");
-      queue.playing = true;
-      queue.pause = false;
-      queue.dispatcher.resume();
+      let queue = this.getQueue(msg)
+      if (!queue) throw new Error("NotPlaying")
+      queue.playing = true
+      queue.pause = false
+      queue.dispatcher.resume()
       msg.react('🤝')
       this._saveToDatabase(msg)
-      return queue;
+      return queue
     } catch (er) {
       console.log(er)
     }
   }
 
   setVolume(msg, percent) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    queue.volume = percent;
-    queue.dispatcher.setVolume(queue.volume / 100);
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    queue.volume = percent
+    queue.dispatcher.setVolume(queue.volume / 100)
     msg.react('🤝')
     this._saveToDatabase(msg)
     return queue
   }
 
   shuffle(msg) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    let playing = queue.songs.shift();
-    for (let i = queue.songs.length - 1; i > 0; i--) {
-      let j = Math.floor(Math.random() * (i + 1));
-      [queue.songs[i], queue.songs[j]] = [queue.songs[j], queue.songs[i]];
-    }
-    queue.songs.unshift(playing);
-    this._saveToDatabase(msg)
-    return queue;
+    // let queue = this.getQueue(msg)
+    // if (!queue) throw new Error("NotPlaying")
+    // let playing = queue.songs.shift()
+    // for (let i = queue.songs.length - 1 i > 0 i--) {
+    //   let j = Math.floor(Math.random() * (i + 1))
+    //   [queue.songs[i], queue.songs[j]] = [queue.songs[j], queue.songs[i]]
+    // }
+    // queue.songs.unshift(playing)
+    // this._saveToDatabase(msg)
+    // return queue
   }
 
   async disconnect(msg) {
@@ -164,33 +160,33 @@ class Bot {
   }
 
   jump(msg, num) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    if (num > queue.songs.length || num < 1) throw new Error("InvalidSong");
-    queue.songs = queue.songs.splice(num - 1);
-    queue.skipped = true;
-    if (queue.dispatcher) queue.dispatcher.end();
-    return queue;
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    if (num > queue.songs.length || num < 1) throw new Error("InvalidSong")
+    queue.songs = queue.songs.splice(num - 1)
+    queue.skipped = true
+    if (queue.dispatcher) queue.dispatcher.end()
+    return queue
   }
 
   async seek(msg, time) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    queue.beginTime = time;
-    this._playSong(msg, false);
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    queue.beginTime = time
+    this._playSong(msg, false)
     msg.react('🤝')
     this._saveToDatabase(msg)
   }
 
   async setRepeatMode(msg, mode = 0) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    mode = parseInt(mode, 10);
-    if (!mode && mode !== 0) queue.repeatMode = (queue.repeatMode + 1) % 3;
-    else if (queue.repeatMode === mode) queue.repeatMode = 0;
-    else queue.repeatMode = mode;
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    mode = parseInt(mode, 10)
+    if (!mode && mode !== 0) queue.repeatMode = (queue.repeatMode + 1) % 3
+    else if (queue.repeatMode === mode) queue.repeatMode = 0
+    else queue.repeatMode = mode
 
-    const newMode = mode ? mode == 2 ? "queue" : "track" : "off";
+    const newMode = mode ? mode == 2 ? "queue" : "track" : "off"
 
     let content
     if (newMode !== 'off') {
@@ -203,30 +199,30 @@ class Bot {
       this._embedMessage(false, content)
     )
     this._saveToDatabase(msg)
-    return queue.repeatMode;
+    return queue.repeatMode
   }
 
   toggleAutoplay(msg) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    queue.autoplay = !queue.autoplay;
-    return queue.autoplay;
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    queue.autoplay = !queue.autoplay
+    return queue.autoplay
   }
 
   isPlaying(msg) {
-    let queue = this.getQueue(msg);
-    return queue ? queue.playing || !queue.pause : false;
+    let queue = this.getQueue(msg)
+    return queue ? queue.playing || !queue.pause : false
   }
 
   isPaused(msg) {
-    let queue = this.getQueue(msg);
-    return queue ? queue.pause : false;
+    let queue = this.getQueue(msg)
+    return queue ? queue.pause : false
   }
 
   _isVoiceChannelEmpty(queue) {
-    let voiceChannel = queue.connection.channel;
-    let members = voiceChannel.members.filter(m => !m.user.bot);
-    return !members.size;
+    let voiceChannel = queue.connection.channel
+    let members = voiceChannel.members.filter(m => !m.user.bot)
+    return !members.size
   }
 
   async _playSong(msg, withNotify = true) {
@@ -240,7 +236,8 @@ class Bot {
     const song = queue.songs[0]
     try {
       if (song.youtube) {
-        const stream = await this._createStream(queue)
+        const stream = await this._createStream(msg, queue)
+        if (!stream) return
         queue.dispatcher = queue.connection.play(stream, {
             volume: queue.volume / 100,
             highWaterMark: 1,
@@ -273,7 +270,7 @@ class Bot {
     if (Array.isArray(arg)) {
       playlist = new Playlist(arg, msg.author)
     }
-    if (!playlist.songs.length) throw Error("No valid video in the playlist");
+    if (!playlist.songs.length) throw Error("No valid video in the playlist")
     let songs = playlist.songs
     let queue = this.getQueue(msg)
 
@@ -299,46 +296,45 @@ class Bot {
     }
   }
 
-  async _searchSong(msg, name, multiple = false) {
-    const results = await ytsr(name, 15)
-    if (!results.length) return
-    let result = results[0]
-    if (multiple) {
-      const preload = (offset = 0, limit = 15) => {
-        let resultList = '```javascript\n'
+  async _searchSong(msg, name, multiple = false, playlist = false) {
+    return ytsr(name, multiple ? 15 : 1)
+      .then(async (songs) => {
 
-        results.slice(offset, limit).forEach((item, i) => {
-          let title = item.title
-          let spacing = ''
-          if (title.length > 37) {
-            title = title.substring(0,37) + '...'
-          }else{
-            for (let i = 0; i < (40 - title.length); i++) {
-              spacing += ' '
-            }
-          }
-          resultList += `${i+1}) ${title.trim()}${spacing}${item.timestamp}\n`
-        })
+        if (!songs.length) return
+        if (songs.length > 1) {
+          await msg.channel.send(
+            '```javascript\n' +
+            songs.map((song, i) => {
+              return `${i+1}) ${song.title.trim().substring(0,37)}${
+                song.timestamp.padStart(40-song.title.length,' ')
+              }`
+            }).join('\n') +
+            '```'
+          )
 
-        resultList += '```'
-        return resultList
-      }
-      
-      await msg.channel.send(preload())
-
-      const answers = await msg.channel.awaitMessages(m => m.author.id === msg.author.id, {
-        max: 1,
-        time: 120000,
-        errors: ['time']
-      })
-      if (!answers.first()) throw new Error()
-      const index = parseInt(answers.first().content, 10)
-      if (isNaN(index) || index > results.length || index < 1) throw new Error()
-      result = results[index - 1]
-    }
-    const info = await getInfo(result.url, ytdlConfig)
-    const song = new Song(info.items[0], msg.author)
-    return song
+          return msg.channel.awaitMessages(m => m.author.id === msg.author.id, {
+            max: 1,
+            time: 60000,
+            errors: ['time']
+          }).then(collected => {
+            if (!collected.first()) throw new Error('No message found.')
+            const index = parseInt(collected.first().content, 10)
+            if (isNaN(index) || index > songs.length || index < 1) throw new Error('Array index out of bound.')
+            if (!songs[index].url) return
+            return ytInfo.getInfo(songs[index].url, ytdlConfig)
+              .then(results => {
+                return new Song(results.items[0], msg.author)
+              })
+          })
+        }else{
+          if (!songs[songs.length-1].url) return
+          if (playlist) return new Song(songs[songs.length-1], msg.author, true, true)
+          return ytInfo.getInfo(songs[songs.length-1].url, ytdlConfig)
+            .then(results => {
+              return new Song(results.items[0], msg.author)
+            })
+        }
+      }).catch(e => console.log(e))
   }
 
   async _resolveSong(msg, song, multiple = false) {
@@ -346,50 +342,61 @@ class Bot {
     if (song instanceof Song) return song
     if (typeof song === 'object') return new Song(song, msg.author)
     if (isURL(song)) {
-      if (urlSpotifyType(song) === 'spotify_song') {
-        const spotifyData = await spotify.getData(song)
-        if (spotifyData) {
-          let q = spotifyData.name
-          if (spotifyData.artists[0]) {
-            q += ` - ${spotifyData.artists[0].name}`
+      switch (urlSpotifyType(song)) {
+        case 'spotify_song':
+          if (song.match(spotifySongRegex)) {
+            const info = await spotify.getData(song)
+            if (info) {
+              let q = info.name || ''
+              if (info.artists[0]) {
+                q += ` - ${info.artists[0].name}`
+              }
+              return this._resolveSong(msg, await this._searchSong(msg, q))
+            }
           }
-          const searchFromYts = await ytsr(q, 1)
-          if (searchFromYts && searchFromYts[0]) {
-            song = searchFromYts[0].url
-          }
-        }
-      }else if(['spotify_playlist', 'spotify_album'].includes(urlSpotifyType(song))) {
-        // const spotifyPlaylist = await spotify.getData(song)
-        // if (spotifyPlaylist) {
-        //   return await spotifyPlaylist.tracks.items.map(async (item) => {
-        //     let q = item.name || item.track.name
-        //     if (item.artists && items.artists[0]) {
-        //       q += ` - ${items.artists[0].name}`
-        //     }
-        //     if (item.track.artists && item.track.artists[0]) {
-        //       q += ` - ${item.track.artists[0].name}`
-        //     }
-        //     const searchFromYts = await ytsr(q, 1)
-        //     if (searchFromYts && searchFromYts[0]) {
-        //       const url = searchFromYts[0].url
-        //       const info = await getInfo(url, ytdlConfig)
-        //       if (info.items && info.items[0]) {
-        //         return new Song(info.items[0], msg.author)
-        //       }
-        //     }
-        //   })
-        // }
-      }
+          break
 
-      const info = await getInfo(song, ytdlConfig)
-      if (info.items.length > 1) {
-        return new Playlist(info, msg.author)
-      }
-      if (info.items[0]) {
-        return new Song(info.items[0], msg.author)
+        case 'spotify_album':
+        case 'spotify_playlist':
+          const playlist = await spotify.getData(song)
+          if (!playlist) return
+          let songs = []
+          if (playlist.type !== 'playlist') {
+            songs = await Promise.all(
+              playlist.tracks.items.map(async (info) => {
+                const title = info.name || ''
+                let artist = ''
+                if (info.artists[0]) {
+                  artist = info.artists[0]
+                }
+                return await this._searchSong(msg, `${title} - ${artist}`, false, true)
+              })
+            )
+          }else{
+            songs = await Promise.all(
+              playlist.tracks.items.map(async (info) => {
+                const title = info.track.name || ''
+                let artist = ''
+                if (info.track.artists[0]) {
+                  artist = info.track.artists[0]
+                }
+                return await this._searchSong(msg, `${title} - ${artist}`, false, true)
+              })
+            )
+          }
+          if (!songs.length) return
+          return songs
+          break
+      
+        default:
+          const info = await ytInfo.getInfo(song, ytdlConfig)
+          if (info.items && info.items[0]) {
+            return new Song(info.items[0], msg.author)
+          }
+          break
       }
     }
-    return this._resolveSong(msg, await this._searchSong(msg, song, multiple))
+    return this._resolveSong(msg, await this._searchSong(msg, song, multiple), multiple)
   }
 
   async _handleSong(msg, song, skip = false) {
@@ -438,8 +445,14 @@ class Bot {
     }
   }
 
-  async _createStream(queue) {
-    const song = queue.songs[0]
+  async _createStream(msg, queue) {
+    let song = queue.songs[0]
+    if (!song.streamUrl) {
+      const info = await ytInfo.getInfo(song.url, ytdlConfig)
+      if (!info.items) return
+      if (!info.items[0]) return
+      song = new Song(info.items[0], msg.author)
+    }
     return song.streamUrl
   }
 
@@ -533,21 +546,21 @@ class Bot {
   }
 
   _addSongsToQueue(msg, songs, unshift = false) {
-    let queue = this.getQueue(msg);
-    if (!queue) throw new Error("NotPlaying");
-    if (!songs.length) throw new Error("NoSong");
+    let queue = this.getQueue(msg)
+    if (!queue) throw new Error("NotPlaying")
+    if (!songs.length) throw new Error("NoSong")
     if (unshift) {
-      let playing = queue.songs.shift();
-      queue.songs.unshift(playing, ...songs);
+      let playing = queue.songs.shift()
+      queue.songs.unshift(playing, ...songs)
     } else {
-      queue.songs.push(...songs);
+      queue.songs.push(...songs)
     }
     const content = `Added ${songs.length} and mores to queue.`
     msg.channel.send(this._embedMessage(
       false,
       content
     ))
-    return queue;
+    return queue
   }
 
   _embedMessage(title, content) {

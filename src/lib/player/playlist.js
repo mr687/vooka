@@ -8,7 +8,7 @@ class Playlist {
     this.user = user
     this.songs = []
     this.partial = playlist.partial || false
-    this.event = playlist || null
+    this.event = this.partial ? playlist || null : null
     if (Array.isArray(playlist)) {
       playlist.forEach(song => {
         this.songs.push(song)

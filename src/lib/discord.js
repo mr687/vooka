@@ -33,12 +33,12 @@ client.on('ready', async() => {
 client.on('message', async (msg) => {
   if (msg.author.bot || !msg.guild || !msg.content) return
 
-  let prefix = '-'
+  let prefix = '='
   const guild = await client.db.guilds.find({
     guildId: msg.guild.id
   })
   if (guild) {
-    prefix = guild.prefix || '-'
+    prefix = guild.prefix || '='
   }
   
   msg.guild.prefix = prefix
@@ -58,6 +58,12 @@ client.on('message', async (msg) => {
   const command = client.commands.get(commandName) ||
     client.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName))
   if (!command) return
+
+  if (command !== 'help') {
+    if (msg.member.voice.channel) {
+      msg.member.voice.channel.join()
+    }
+  }
 
   if (command.arg && !args.length && command.arg !== 'optional') {
     let content = `You didn't provide any arguments, ${msg.author}!`
@@ -90,7 +96,7 @@ client.on('message', async (msg) => {
 })
 
 const token = process.env.DISCORD_TOKEN || 'Place your token here'
-const start = () => {
+const start = async () => {
   client.login(token)
 }
 
