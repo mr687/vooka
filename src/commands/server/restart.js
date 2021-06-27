@@ -11,11 +11,14 @@ module.exports = {
   adminOnly: true,
   async execute(msg, args) {
     if (msg.author.id === adminId) {
-      msg.channel.send(
+      await msg.channel.send(
         new MessageEmbed()
         .setColor('#97ffe5')
         .setDescription('Restarting server.')
       )
+      if (msg.member.voice.channel) {
+        await msg.member.voice.channel.leave()
+      }
       process.exit()
     } else {
       msg.channel.send(

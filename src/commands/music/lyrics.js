@@ -1,5 +1,5 @@
 const { MessageEmbed } = require("discord.js");
-const lyricsFinder = require("@youka/lyrics");
+const lyricsFinder = require("findlyrics");
 
 module.exports = {
   name: 'lyrics',

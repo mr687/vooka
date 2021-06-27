@@ -8,6 +8,7 @@ const Playlist = require('./playlist')
 const Song = require('./song')
 const ytSearch = require('yt-search')
 const {getInfo} = require('ytdl-getinfo')
+require('dotenv').config()
 
 const isURL = string => {
   if (string.includes(" ")) return false;
@@ -32,25 +33,11 @@ const ytdlConfig = [
   '--default-search=ytsearch',
   '-i',
   '--format=bestaudio',
-  `--proxy=${process.env.PROXY || null}`
 ]
 
-const ffmpegFilters = {
-  "3d": "apulsator=hz=0.125",
-  bassboost: "bass=g=10,dynaudnorm=f=150:g=15",
-  echo: "aecho=0.8:0.9:1000:0.3",
-  flanger: "flanger",
-  gate: "agate",
-  haas: "haas",
-  karaoke: "stereotools=mlev=0.1",
-  nightcore: "asetrate=48000*1.25,aresample=48000,bass=g=5",
-  reverse: "areverse",
-  vaporwave: "asetrate=48000*0.8,aresample=48000,atempo=1.1",
-  mcompand: "mcompand",
-  phaser: "aphaser",
-  tremolo: "tremolo",
-  surround: "surround",
-  earwax: "earwax",
+const proxy = process.env.PROXY || null
+if (proxy){
+  ytdlConfig.push(`--proxy=${proxy}`)
 }
 
 class Bot {
@@ -59,7 +46,6 @@ class Bot {
 
     this.client = client
     this.guildQueues = new Collection()
-    this.filters = ffmpegFilters
     this.options = options
 
     client.on("voiceStateUpdate", (oldState, newState) => {
@@ -299,13 +285,35 @@ class Bot {
   }
 
   async _searchSong(msg, name, multiple = false) {
-    const results = await ytsr(name, 10)
+    const results = await ytsr(name, 15)
     if (!results.length) return
-    const result = results[0]
+    let result = results[0]
     if (multiple) {
-      let answers = await msg.channel.awaitMessages(m => m.author.id === msg.author.id, {
+      const preload = (offset = 0, limit = 15) => {
+        let resultList = '```javascript\n'
+
+        results.slice(offset, limit).forEach((item, i) => {
+          let title = item.title
+          let spacing = ''
+          if (title.length > 37) {
+            title = title.substring(0,37) + '...'
+          }else{
+            for (let i = 0; i < (40 - title.length); i++) {
+              spacing += ' '
+            }
+          }
+          resultList += `${i+1}) ${title.trim()}${spacing}${item.timestamp}\n`
+        })
+
+        resultList += '```'
+        return resultList
+      }
+      
+      await msg.channel.send(preload())
+
+      const answers = await msg.channel.awaitMessages(m => m.author.id === msg.author.id, {
         max: 1,
-        time: 60000,
+        time: 120000,
         errors: ['time']
       })
       if (!answers.first()) throw new Error()
