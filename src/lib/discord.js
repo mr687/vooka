@@ -59,6 +59,15 @@ client.on('message', async (msg) => {
     client.commands.find(cmd => cmd.alias && cmd.alias.includes(commandName))
   if (!command) return
 
+  client.db.guilds.update(
+    {"guildId" : msg.guild.id},
+    {
+          $set: {
+            "voiceChannelId" : msg.member.voice.channel.id
+          }
+    }
+  )
+
   if (command !== 'help') {
     if (msg.member.voice.channel) {
       msg.member.voice.channel.join()

@@ -297,6 +297,7 @@ class Bot {
   }
 
   async _searchSong(msg, name, multiple = false, playlist = false) {
+    console.log(`[ytsr] searching .. - ${name}`)
     return ytsr(name, multiple ? 15 : 1)
       .then(async (songs) => {
 
@@ -349,7 +350,7 @@ class Bot {
             if (info) {
               let q = info.name || ''
               if (info.artists[0]) {
-                q += ` - ${info.artists[0].name}`
+                q += ` ${info.artists[0].name}`
               }
               return this._resolveSong(msg, await this._searchSong(msg, q))
             }
@@ -367,10 +368,10 @@ class Bot {
                 const title = info.name || ''
                 let artist = ''
                 if (info.artists[0]) {
-                  artist = info.artists[0]
+                  artist = info.artists[0].name
                 }
-                return await this._searchSong(msg, `${title} music`, false, true)
-              })
+                return await this._searchSong(msg, `${title} ${artist}`, false, true)
+              }).catch(e => {console.log(e)})
             )
           }else{
             songs = await Promise.all(
@@ -378,9 +379,9 @@ class Bot {
                 const title = info.track.name || ''
                 let artist = ''
                 if (info.track.artists[0]) {
-                  artist = info.track.artists[0]
+                  artist = info.track.artists[0].name
                 }
-                return await this._searchSong(msg, `${title} music`, false, true)
+                return await this._searchSong(msg, `${title} ${artist}`, false, true)
               })
             )
           }
