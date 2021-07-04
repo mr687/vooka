@@ -31,7 +31,7 @@ class Track{
     return new Promise(async (resolve) => {
       switch (this.source) {
         case 'youtube':
-          const ytStream = await YoutubeDl.getInfo(this.url, config.ytdlConfigs())
+          ytStream = await YoutubeDl.getInfo(this.url, config.ytdlConfigs())
           if (!ytStream && !ytStream.items.length) return resolve(null)
           this.source = 'attachment'
           return resolve(ytStream.items[0].url)
@@ -41,7 +41,7 @@ class Track{
           let q = `${this.title} ${this.author || ''}`
           const yt = await ytSearch(q.trim(), 1)
           if (!yt) return
-          const ytStream = await YoutubeDl.getInfo(yt.url, config.ytdlConfigs())
+          ytStream = await YoutubeDl.getInfo(yt.url, config.ytdlConfigs())
           if (!ytStream && !ytStream.items.length) return resolve(null)
           this.source = 'attachment'
           return resolve(ytStream.items[0].url)
