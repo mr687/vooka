@@ -29,13 +29,13 @@ const execute = async (message, command, args) => {
     args = valid(message).args
   if (command.args && !args.length && command.args !== 'optional')
     return await utils.discord.sendEmbedMessage(message, {description: utils.strings.NO_ARGUMENTS})
+  if (!message.member.voice.channel) {
+    return utils.discord.sendEmbedMessage(message, {description: utils.strings.NO_VOICE_CHANNEL})
+  }
   if (command.adminOnly &&
     message.author.id !== message.client.env.DISCORD_ADMIN_ID)
     return await utils.discord.sendEmbedMessage(message, {description: utils.strings.COMMAND_NO_PERMISSION})
   
-  if (!message.member.voice.channel) {
-    return utils.discord.sendEmbedMessage(message, {description: utils.strings.NO_VOICE_CHANNEL})
-  }
   if (!command.args) return command.execute(message)
   return command.execute(message, args)
 }

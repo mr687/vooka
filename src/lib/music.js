@@ -12,6 +12,15 @@ class Music{
     this.queues = new Discord.Collection()
     this.client = client
     this.utils = this.client.utils
+
+    this.client.on("voiceStateUpdate", (oldState, newState) => {
+      if (newState && newState.id === this.client.user.id && !newState.channelID) {
+        let queue = this.queues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID)
+        if (!queue) return
+        let guildID = queue.connection.channel.guild.id
+        try { this.stop({guild:{id:guildID}}) } catch { this._deleteQueue({guild:{id:guildID}}) }
+      }
+    })
   }
   async play(message, query){
     return this._handleTrack(message, 
@@ -26,9 +35,11 @@ class Music{
     if (!queue) return
     queue.stopped = true
     if (queue.dispatcher) queue.dispatcher.end()
-    this.utils.discord.deletePlayingMessage(message, queue)
-    this._deleteQueue(message)
-    return this.utils.discord.sendReaction(message, '👍🏼')
+    if (message instanceof Discord.Message) {
+      this.utils.discord.deletePlayingMessage(message, queue)
+      this.utils.discord.sendReaction(message, '👍🏼')
+    }
+    return this._deleteQueue(message)
   }
   pause(message){
     const queue = this._queue(message)
@@ -339,37 +350,27 @@ class Music{
     let track = queue.tracks[0]
     if (!track.streamUrl) return
     const stream = await this._createStream(queue)
-    const checkStream = async(s) => {
-      if (!s) {
-        queue.tracks.shift()
-        if(queue.tracks.length > 0) {
-          track = queue.tracks[0]
-          stream = await this._createStream(queue)
-          return await checkStream(stream)
-        }
-      }
+    if (!stream) {
+      return await this._handleOnTrackError(message, queue, {})
     }
-    await checkStream(stream)
     
     if (withMessage) {
       queue.playingMessage = this.utils.discord.sendPlayingMessage(message, track, queue)
     }
+
+    let options = this.client.utils.config.discordSpeakConfigs
+    options.seek = queue.beginTime
+    options.volume = queue.volume / 100
+    queue.dispatcher = queue.connection.play(stream, options)
+      .on('finish', () => this._handleOnTrackFinish(message, queue))
+      .on('error', err => this._handleOnTrackError(message, queue, err))
     if (queue.repeatMode !== 1) {
       track.guildId = message.guild.id
       this.client.recentTracks.insert(track)
         .catch(e => {})
     }
-
-    let options = this.client.utils.config.discordSpeakConfigs
-    options.seek = queue.beginTime
-    if (track.source !== 'attachment') {
-      options.volume = queue.volume / 100
-    }
-    queue.dispatcher = queue.connection.play(stream, options)
-      .on('finish', () => this._handleOnTrackFinish(message, queue))
-      .on('error', err => this._handleOnTrackError(message, queue, err))
-    if (queue.currentStream) queue.currentStream.destroy()
-    queue.currentStream = stream
+    // if (queue.currentStream) queue.currentStream.destroy()
+    // queue.currentStream = stream
     queue.playing = true
     queue.playingId = track.id
   }
@@ -400,7 +401,7 @@ class Music{
     queue.tracks.push(track)
     this.utils.discord.sendEmbedMessage(
       message,
-      {description: `Queued [${track.name}](${track.url}) [<@${message.author.id}>]`}
+      {description: `Queued [${track.title}](${track.url}) [<@${message.author.id}>]`}
     )
     return queue
   }
@@ -410,7 +411,7 @@ class Music{
     queue.tracks.push(...tracks)
     this.utils.discord.sendEmbedMessage(
       message,
-      {description: `Queued [${tracks[0].name}](${tracks[0].url}) and ${tracks.length-1} mores [<@${message.author.id}>]`}
+      {description: `Queued [${tracks[0].title}](${tracks[0].url}) and ${tracks.length-1} mores [<@${message.author.id}>]`}
     )
     return queue
   }

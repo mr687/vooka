@@ -9,7 +9,6 @@ const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 
 client.on('ready', () => onReady(client))
 client.on('message', onMessage)
-client.on('voiceStateUpdate', onVoiceStateUpdate)
 client.on('messageReactionAdd', onMessageReactionAdd)
 client.on('messageReactionRemove', onMessageReactionRemove)
 client.on('error', onError)

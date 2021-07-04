@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node src/app.js"
   },
-  "keywords": ["bot", "discord", "music", "nodejs"],
+  "keywords": [
+    "bot",
+    "discord",
+    "music",
+    "nodejs"
+  ],
   "author": "mr687",
   "license": "MIT",
   "dependencies": {
@@ -21,7 +26,8 @@
     "opusscript": "^0.0.8",
     "spotify-url-info": "^2.2.3",
     "youtube-sr": "^4.1.6",
-    "ytdl-core": "^4.8.3"
+    "ytdl-core": "^4.8.3",
+    "ytdl-getinfo": "^1.1.0"
   },
   "devDependencies": {
     "dotenv": "^10.0.0"
