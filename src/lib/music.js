@@ -99,11 +99,9 @@ class Music{
     const queue = this._queue(message)
     if (!queue || queue.tracks.length < 2) return
     if (!queue.previousTracks.length) return
-    const track = queue.previousTracks.pop()
     this.toPrevious = true
-    queue.tracks.unshift(track)
-    this.queues.set(message.guild.id, queue)
     queue.dispatcher.end()
+    this.utils.discord.deletePlayingMessage(message, queue)
     return this.utils.discord.sendReaction(message, '👍🏼')
   }
   async lyrics(message, title = null){
@@ -210,19 +208,18 @@ class Music{
   _handleOnTrackFinish(message, queue){
     if (queue.stopped) return
     if (queue.repeatMode === 2 && !queue.skipped) queue.tracks.push(queue.tracks[0])
-    if (queue.tracks.length <= 1 && (queue.skipped || !queue.repeatMode)) {
-      // if (queue.autoplay) try { await this.addRelatedVideo(message) } catch { this.emit("noRelated", message) }
-      if (queue.tracks.length <= 1) {
-        this._deleteQueue(message)
-        // if (this.options.leaveOnFinish && !queue.stopped) queue.connection.channel.leave()
-        return this.utils.discord.deletePlayingMessage(message, queue)
-      }
+    if (queue.tracks.length <= 1) {
+      this._deleteQueue(message)
+      return this.utils.discord.deletePlayingMessage(message, queue)
     }
-    if ((queue.repeatMode !== 1 || queue.skipped) && !queue.toPrevious) {
+    if (queue.previousTracks.length && queue.toPrevious) {
+      queue.tracks.unshift(queue.previousTracks.pop())
+    }
+    else if (queue.repeatMode !== 1 || queue.skipped) {
       const recent = queue.tracks.shift()
       queue.previousTracks.push(recent)
-      this.utils.discord.deletePlayingMessage(message, queue)
     }
+    this.utils.discord.deletePlayingMessage(message, queue)
     queue.toPrevious = false
     queue.skipped = false
     queue.beginTime = 0
