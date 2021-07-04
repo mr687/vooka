@@ -18,6 +18,7 @@ class Queue{
     this.volume = 100
     this.repeatMode = 0
     this.beginTime = 0
+    this.toPrevious = false
     this.previousTracks = []
     this.currentStream = null
     this.playingMessage = null

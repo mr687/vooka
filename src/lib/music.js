@@ -99,7 +99,8 @@ class Music{
     const queue = this._queue(message)
     if (!queue || queue.tracks.length < 2) return
     if (!queue.previousTracks.length) return
-    const track = queue.previousTracks.shift()
+    const track = queue.previousTracks.pop()
+    this.toPrevious = true
     queue.tracks.unshift(track)
     queue.dispatcher.end()
     return this.utils.discord.sendReaction(message, '👍🏼')
@@ -216,11 +217,12 @@ class Music{
         return this.utils.discord.deletePlayingMessage(message, queue)
       }
     }
-    if (queue.repeatMode !== 1 || queue.skipped) {
+    if ((queue.repeatMode !== 1 || queue.skipped) && !queue.toPrevious) {
       const recent = queue.tracks.shift()
       queue.previousTracks.push(recent)
       this.utils.discord.deletePlayingMessage(message, queue)
     }
+    queue.toPrevious = false
     queue.skipped = false
     queue.beginTime = 0
     this._startTrack(message, true)
@@ -348,6 +350,7 @@ class Music{
     if (!queue.tracks.length) return this._deleteQueue(message)
     if (queue.stopped) return
     let track = queue.tracks[0]
+    console.log(track)
     if (!track.streamUrl) return
     const stream = await this._createStream(queue)
     if (!stream) {
