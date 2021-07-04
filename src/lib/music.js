@@ -165,7 +165,8 @@ class Music{
           track.source = x.source || 'youtube'
           track.streamUrl = x.url
           return track
-        })
+        }),
+        true
       )
       return this.utils.discord.sendReaction(message, '👍🏼')
     }
@@ -320,11 +321,14 @@ class Music{
     if (this._queue(message)) return this._addTrackToQueue(message, track)
     return this._createQueue(message, track)
   }
-  _handlePlaylist(message, playlist){
+  _handlePlaylist(message, playlist, withShuffle = false){
     if (Array.isArray(playlist) && !playlist.length) return
     if (playlist instanceof Playlist && !playlist.tracks.length) return
     const tracks = Array.isArray(playlist) ? playlist: playlist.tracks
     let queue = this._queue(message)
+    if (withShuffle) {
+      queue.tracks = ArrayShuffle(queue.tracks)
+    }
     if (queue){
       this._addTracksToQueue(message, tracks)
     }else{
