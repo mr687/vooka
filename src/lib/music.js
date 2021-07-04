@@ -102,6 +102,7 @@ class Music{
     const track = queue.previousTracks.pop()
     this.toPrevious = true
     queue.tracks.unshift(track)
+    this.queues.set(message.guild.id, queue)
     queue.dispatcher.end()
     return this.utils.discord.sendReaction(message, '👍🏼')
   }
@@ -350,7 +351,6 @@ class Music{
     if (!queue.tracks.length) return this._deleteQueue(message)
     if (queue.stopped) return
     let track = queue.tracks[0]
-    console.log(track)
     if (!track.streamUrl) return
     const stream = await this._createStream(queue)
     if (!stream) {
