@@ -339,10 +339,13 @@ class Music{
   async _createStream(queue){
     const track = queue.tracks[0]
     let streamOptions = this.utils.config.streamConfigs
+    if (!track.streamUrl){
+      track.streamUrl = await track.searchStreamUrl(this.utils)
+    }
     if (track.source !== 'attachment') return ytdl(await track.streamUrl, streamOptions)
     const streamUrl = await track.streamUrl
     if (!streamUrl && !track.url) return
-    return streamUrl || track.url
+    return streamUrl
   }
   async _startTrack(message, withMessage = false){
     const queue = this._queue(message)

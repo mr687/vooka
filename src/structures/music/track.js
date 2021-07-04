@@ -18,11 +18,11 @@ class Track{
       track.duration_ms? buildTimeCode(parseMs(track.duration_ms)): null || null
     this.url = track.url || (track.external_urls ? track.external_urls.spotify : null) || source==='youtube'?`https://www.youtube.com/watch?v=${this.id}`:null
     this.source = source
-    this.streamUrl = this._searchStreamUrl(message.client.utils) || this.url
+    this.streamUrl = null
     this.stream = null
   }
 
-  _searchStreamUrl(utils) {
+  searchStreamUrl(utils) {
     if (!this.url) return
     let ytStream = null
     const {buildTimeCode, parseMs, ytSearch, config, discord} = utils
