@@ -13,19 +13,17 @@ class Track{
     this.description = track.description || null
     this.thumbnail = track.thumbnail? track.thumbnail.displayThumbnailURL(): null ||
       (track.thumbnail? track.thumbnail.url: null) || 
-        ((track.album&&track.album.images[0]&&track.album.images[0].url) ||
-          (track.preview_url&&track.preview_url.length)) ?
-            `https://i.scdn.co/image/${track.preview_url.split('?cid=')[1]}`:
-              'https://www.scdn.co/i/_global/twitter_card-default.jpg' || null
+        track.album&&track.album.images[0]? track.album.images[0].url: null || null
     this.duration = track.durationFormatted || track.duration? buildTimeCode(parseMs(track.duration)): null ||
       track.duration_ms? buildTimeCode(parseMs(track.duration_ms)): null || null
-    this.url = track.url || (track.external_urls ? track.external_urls.spotify : null) || null
+    this.url = track.url || (track.external_urls ? track.external_urls.spotify : null) || source==='youtube'?`https://www.youtube.com/watch?v=${this.id}`:null
     this.source = source
     this.streamUrl = this._searchStreamUrl(message.client.utils) || this.url
     this.stream = null
   }
 
   _searchStreamUrl(utils) {
+    if (!this.url) return
     let ytStream = null
     const {buildTimeCode, parseMs, ytSearch, config, discord} = utils
     return new Promise(async (resolve) => {

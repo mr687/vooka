@@ -267,7 +267,7 @@ class Music{
         playlist = new Playlist()
         playlist.tracks = search.videos.map(i => new Track(message, i, 'youtube'))
         playlist.duration = search.videos.reduce((a,c) => a + c.durationMS, 0)
-        playlist.thumbnail = search.thumbnail? search.thumbnail.url: null || search.videos[0].thumbnail || null
+        playlist.thumbnail = search.thumbnail || search.videos[0].thumbnail || null
         playlist.user = message.author
         return playlist
       case 'attachment':
@@ -340,7 +340,9 @@ class Music{
     const track = queue.tracks[0]
     let streamOptions = this.utils.config.streamConfigs
     if (track.source !== 'attachment') return ytdl(await track.streamUrl, streamOptions)
-    return await track.streamUrl || track.url
+    const streamUrl = await track.streamUrl
+    if (!streamUrl && !track.url) return
+    return streamUrl || track.url
   }
   async _startTrack(message, withMessage = false){
     const queue = this._queue(message)
