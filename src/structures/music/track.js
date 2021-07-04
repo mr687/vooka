@@ -26,6 +26,7 @@ class Track{
   }
 
   _searchStreamUrl(utils) {
+    let ytStream = null
     const {buildTimeCode, parseMs, ytSearch, config, discord} = utils
     return new Promise(async (resolve) => {
       switch (this.source) {
