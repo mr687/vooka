@@ -61,10 +61,8 @@ class Music{
   }
   skip(message){
     const queue = this._queue(message)
-    if (!queue || !queue.tracks.length) {
-      this.utils.discord.deletePlayingMessage(message, queue)
-      return
-    }
+    if (!queue || !queue.tracks.length) return
+    this.utils.discord.deletePlayingMessage(message, queue)
     queue.skipped = true
     queue.dispatcher.end()
     this.utils.discord.sendReaction(message, '👍🏼')
@@ -98,8 +96,7 @@ class Music{
   previous(message){
     const queue = this._queue(message)
     if (!queue || queue.tracks.length < 2) return
-    if (!queue.previousTracks.length) return
-    this.toPrevious = true
+    queue.toPrevious = true
     queue.dispatcher.end()
     this.utils.discord.deletePlayingMessage(message, queue)
     return this.utils.discord.sendReaction(message, '👍🏼')
