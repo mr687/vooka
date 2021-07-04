@@ -99,7 +99,7 @@ class Music{
     const queue = this._queue(message)
     if (!queue || queue.tracks.length < 2) return
     if (!queue.previousTracks.length) return
-    const track = queue.previousTracks.pop()
+    const track = queue.previousTracks.shift()
     queue.tracks.unshift(track)
     queue.dispatcher.end()
     return this.utils.discord.sendReaction(message, '👍🏼')
