@@ -206,7 +206,7 @@ class Music{
       }
     }
     if (queue.repeatMode !== 1 || queue.skipped) {
-      const recent = queue.tracks[0]
+      const recent = queue.tracks.shift()
       queue.previousTracks.push(recent)
       this.utils.discord.deletePlayingMessage(message, queue)
     }
@@ -398,12 +398,20 @@ class Music{
     const queue = this._queue(message)
     if (!queue || !track) return
     queue.tracks.push(track)
+    this.utils.discord.sendEmbedMessage(
+      message,
+      {description: `Queued [${track.name}](${track.url}) [<@${message.author.id}>]`}
+    )
     return queue
   }
   _addTracksToQueue(message, tracks){
     const queue = this._queue(message)
     if (!Array.isArray(tracks) || !tracks.length) return
     queue.tracks.push(...tracks)
+    this.utils.discord.sendEmbedMessage(
+      message,
+      {description: `Queued [${tracks[0].name}](${tracks[0].url}) and ${tracks.length-1} mores [<@${message.author.id}>]`}
+    )
     return queue
   }
   _deleteQueue(message){

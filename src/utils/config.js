@@ -2,8 +2,7 @@ module.exports = {
   streamConfigs: {
     filter: 'audioonly',
     quality: 'highestaudio',
-    opusEncoded: true,
-    highWaterMark: 1,
+    highWaterMark: 1<<25,
     requestOptions: {},
     seek: 0,
   },
