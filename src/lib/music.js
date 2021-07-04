@@ -324,11 +324,9 @@ class Music{
   _handlePlaylist(message, playlist, withShuffle = false){
     if (Array.isArray(playlist) && !playlist.length) return
     if (playlist instanceof Playlist && !playlist.tracks.length) return
-    const tracks = Array.isArray(playlist) ? playlist: playlist.tracks
+    let tracks = Array.isArray(playlist) ? playlist: playlist.tracks
+    tracks = ArrayShuffle(tracks)
     let queue = this._queue(message)
-    if (withShuffle) {
-      queue.tracks = ArrayShuffle(queue.tracks)
-    }
     if (queue){
       this._addTracksToQueue(message, tracks)
     }else{
