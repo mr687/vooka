@@ -31,6 +31,7 @@ class Track{
     return new Promise(async (resolve) => {
       switch (this.source) {
         case 'youtube':
+          if (!this.url) return
           ytStream = await YoutubeDl.getInfo(this.url, config.ytdlConfigs())
           if (!ytStream && !ytStream.items.length) return resolve(null)
           this.source = 'attachment'
