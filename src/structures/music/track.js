@@ -30,20 +30,20 @@ class Track{
     return new Promise(async (resolve) => {
       switch (this.source) {
         case 'youtube':
-          const stream = await YoutubeDl.getInfo(this.url, config.ytdlConfigs())
-          if (!stream && !stream.items.length) return resolve(null)
+          const ytStream = await YoutubeDl.getInfo(this.url, config.ytdlConfigs())
+          if (!ytStream && !ytStream.items.length) return resolve(null)
           this.source = 'attachment'
-          return resolve(stream.items[0].url)
+          return resolve(ytStream.items[0].url)
         case 'attachment':
           return resolve(this.url)
         case 'spotify':
           let q = `${this.title} ${this.author || ''}`
           const yt = await ytSearch(q.trim(), 1)
           if (!yt) return
-          const stream = await YoutubeDl.getInfo(yt.url, config.ytdlConfigs())
-          if (!stream && !stream.items.length) return resolve(null)
+          const ytStream = await YoutubeDl.getInfo(yt.url, config.ytdlConfigs())
+          if (!ytStream && !ytStream.items.length) return resolve(null)
           this.source = 'attachment'
-          return resolve(stream.items[0].url)
+          return resolve(ytStream.items[0].url)
         default:
           return this.url
       }
