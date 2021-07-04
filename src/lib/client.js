@@ -1,6 +1,6 @@
 const {Client} = require('discord.js')
 const {discord} = require('../utils')
-const {onReady, onMessage, onVoiceStateUpdate, onError, onMessageReactionAdd, onMessageReactionRemove} = require('../handler')
+const {onReady, onMessage, onError, onMessageReactionAdd, onMessageReactionRemove} = require('../handler')
 
 require('dotenv').config()
 const token = process.env.DISCORD_TOKEN || 'Place your token here'
