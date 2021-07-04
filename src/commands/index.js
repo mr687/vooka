@@ -1,8 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const {
-  Collection
-} = require('discord.js')
+const { Collection } = require('discord.js')
 
 const commandsPath = path.join(__dirname, '')
 const commands = new Collection()

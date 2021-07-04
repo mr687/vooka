@@ -1,8 +1,7 @@
 module.exports = {
   name: 'pause',
   description: 'Pause song.',
-  needBot: true,
-  async execute(bot, msg) {
-    return bot.pause(msg)
+  async execute(message) {
+    return message.client.lib.music.pause(message)
   }
 }

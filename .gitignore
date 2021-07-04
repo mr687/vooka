@@ -1,4 +1,4 @@
 node_modules
 .DS_Store
 .env
-info-replacer.js
+package-lock.json

@@ -1,13 +1,12 @@
 module.exports = {
   name: 'volume',
   description: 'Set volume, max: 200',
-  alias: ['vol'],
+  aliases: ['vol'],
   usage: '<volume number>',
-  arg: true,
-  needBot: true,
-  async execute(bot, msg, args) {
+  args: true,
+  async execute(message, args) {
     const req = parseInt(args[0])
     if (isNaN(req)) return
-    bot.setVolume(msg, req)
+    message.client.lib.music.volume(message, req)
   }
 }

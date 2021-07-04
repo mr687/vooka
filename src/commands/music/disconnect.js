@@ -1,9 +1,8 @@
 module.exports = {
   name: 'disconnect',
   description: 'Disconnect bot',
-  alias: ['dc'],
-  needBot: true,
-  async execute(bot, msg) {
-    bot.disconnect(msg)
+  aliases: ['dc', 'dis', 'leave'],
+  async execute(message) {
+    return await message.client.lib.music.disconnect(message)
   }
 }

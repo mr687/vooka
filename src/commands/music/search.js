@@ -1,12 +1,11 @@
 module.exports = {
   name: 'search',
   description: 'Show 10 songs list.',
-  alias: ['s'],
-  arg: true,
+  aliases: ['s'],
+  args: true,
   usage: '<song>',
-  needBot: true,
-  async execute(bot, msg, args) {
-    const song = args.join(' ')
-    bot.play(msg, song, true)
+  async execute(message, args) {
+    const query = args.join(' ')
+    message.client.lib.music.playSearch(message, query)
   }
 }

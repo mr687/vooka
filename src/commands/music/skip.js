@@ -1,8 +1,7 @@
 module.exports = {
   name: 'skip',
   description: 'Skip to next track.',
-  needBot: true,
-  async execute(bot, msg) {
-    return bot.skip(msg)
+  async execute(message) {
+    return message.client.lib.music.skip(message)
   }
 }

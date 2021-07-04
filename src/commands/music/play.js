@@ -1,12 +1,11 @@
 module.exports = {
   name: 'play',
-  description: 'Play song from song title, youtube url, etc.',
-  alias: ['p'],
-  arg: true,
+  description: 'Play song from a song title, youtube url, etc.',
+  aliases: ['p'],
+  args: true,
   usage: '<song|youtube-url|url1,url2,...>',
-  needBot: true,
-  async execute(bot, msg, args) {
-    const song = args.join(' ')
-    bot.play(msg, song)
+  async execute(message, args) {
+    const query = args.join(' ').trim()
+    message.client.lib.music.play(message, query)
   }
 }
