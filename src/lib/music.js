@@ -227,12 +227,12 @@ class Music extends EventEmitter{
       }
     )
   }
-  _handleOnTrackFinish(message, queue){
+  async _handleOnTrackFinish(message, queue){
     if (queue.stopped) return
     if (queue.repeatMode === 2 && !queue.skipped) queue.tracks.push(queue.tracks[0])
     if (queue.tracks.length <= 1) {
       this._deleteQueue(message)
-      return this.utils.discord.deletePlayingMessage(message, queue)
+      return await this.utils.discord.deletePlayingMessage(message, queue)
     }
     if (queue.previousTracks.length && queue.toPrevious) {
       queue.tracks.unshift(queue.previousTracks.pop())
@@ -241,11 +241,11 @@ class Music extends EventEmitter{
       const recent = queue.tracks.shift()
       queue.previousTracks.push(recent)
     }
-    this.utils.discord.deletePlayingMessage(message, queue)
+    await this.utils.discord.deletePlayingMessage(message, queue)
     queue.toPrevious = false
     queue.skipped = false
     queue.beginTime = 0
-    this._startTrack(message, true)
+    return await this._startTrack(message, true)
   }
   _handleOnTrackError(message, queue, err){
     if (typeof message !== 'string') {
@@ -352,7 +352,7 @@ class Music extends EventEmitter{
     options.seek = queue.beginTime
     options.volume = queue.volume / 100
     queue.dispatcher = queue.connection.play(stream, options)
-      .on('finish', () => this._handleOnTrackFinish(message, queue))
+      .on('finish', async () => await this._handleOnTrackFinish(message, queue))
       .on('error', err => this._handleOnTrackError(message, queue, err))
     if (queue.repeatMode !== 1) {
       track.guildId = message.guild.id
