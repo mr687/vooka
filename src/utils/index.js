@@ -10,6 +10,8 @@ module.exports.commander = require('./commander')
 module.exports.discord = require('./discord')
 module.exports.strings = require('./strings')
 module.exports.config = require('./config')
+module.exports.events = require('./events')
+module.exports.track = require('./track')
 module.exports.isUrl = (str) => {
   return str.length < 2083 && attachmentRegex.test(str)
 }

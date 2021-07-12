@@ -20,5 +20,6 @@ module.exports = {
       conf.push(`--proxy=${proxy}`)
     }
     return conf
-  }
+  },
+  discord: { partials: ['MESSAGE', 'CHANNEL', 'REACTION'] }
 }

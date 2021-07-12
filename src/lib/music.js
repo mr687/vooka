@@ -1,45 +1,63 @@
 const Discord = require('discord.js')
-const Spotify = require('spotify-url-info')
-const Youtube = require('youtube-sr').default
 const Track = require('../structures/music/track')
 const Playlist = require('../structures/music/playlist')
 const Queue = require('../structures/music/queue')
-const ytdl = require('ytdl-core')
 const ArrayShuffle = require('array-shuffle')
+const EventEmitter = require('events')
 
-class Music{
+class Music extends EventEmitter{
   constructor(client) {
+    super()
     this.queues = new Discord.Collection()
     this.client = client
     this.utils = this.client.utils
+    this.events = this.utils.events
 
     this.client.on("voiceStateUpdate", (oldState, newState) => {
       if (newState && newState.id === this.client.user.id && !newState.channelID) {
-        let queue = this.queues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID)
-        if (!queue) return
-        let guildID = queue.connection.channel.guild.id
-        try { this.stop({guild:{id:guildID}}) } catch { this._deleteQueue({guild:{id:guildID}}) }
+        try { 
+          const queue = this.queues.find(gQueue => gQueue.connection && gQueue.connection.channel.id === oldState.channelID)
+          if (!queue) return
+          const guildId = queue.connection.channel.guild.id
+          this.emit(this.events.LEAVE_CHANNEL, {guildId})
+          this.stop({guild:{id:guildId}})
+        } catch(e) { 
+          this.emit(this.events.ERROR, e)
+          this._deleteQueue({guild:{id:guildId}})
+         }
       }
     })
   }
   async play(message, query){
-    return this._handleTrack(message, 
-      await this._resolveTrack(message, query))
+    try {
+      return this._handleTrack(message, 
+        await this._resolveTrack(message, query))
+    } catch (e) {
+      this.emit(this.events.ERROR, e)
+    }
   }
   async playSearch(message, query) {
-    return this._handleTrack(message,
-      await this._resolveTrack(message, query, true))
+    try {
+      return this._handleTrack(message, 
+        await this._resolveTrack(message, query, true))
+    } catch (e) {
+      this.emit(this.events.ERROR, e)
+    }
   }
   stop(message){
     const queue = this._queue(message)
     if (!queue) return
-    queue.stopped = true
-    if (queue.dispatcher) queue.dispatcher.end()
-    if (message instanceof Discord.Message) {
-      this.utils.discord.deletePlayingMessage(message, queue)
-      this.utils.discord.sendReaction(message, '👍🏼')
+    try {
+      queue.stopped = true
+      if (queue.dispatcher) queue.dispatcher.end()
+      if (message instanceof Discord.Message) {
+        this.utils.discord.deletePlayingMessage(message, queue)
+        this.utils.discord.sendReaction(message, '👍🏼')
+      }
+      return this._deleteQueue(message)
+    } catch (e) {
+      this.emit(this.events.ERROR, e)
     }
-    return this._deleteQueue(message)
   }
   pause(message){
     const queue = this._queue(message)
@@ -109,12 +127,13 @@ class Music{
         {description: this.utils.strings.NO_QUEUE}
       )
     const track = queue.tracks[0]
+    this.utils.discord.sendReaction(message, '👍🏼')
     let lyrics,q
     if (title){
       lyrics = await this.utils.searchLyrics(`${title}`)
     }
     else if (track.source === 'spotify'){
-      q = `${track.title} ${track.author || ''}`
+      q = `${track.title}`
       lyrics = await this.utils.searchLyrics(`${q.trim()}`)
     }else if(track.source === 'youtube') {
       q = `${track.title}`
@@ -145,11 +164,13 @@ class Music{
         connection.channel.leave()
       })
     }
+    this.utils.discord.sendReaction(message, '👍🏼')
     return this._deleteQueue(message)
   }
   async autoplay(message){
-    const recentTracks = await this.client.recentTracks.find({guildId: message.guild.id})
+    let recentTracks = await this.client.recentTracks.find({guildId: message.guild.id})
     if (recentTracks && recentTracks.length) {
+      recentTracks = ArrayShuffle(recentTracks)
       this._handlePlaylist(
         message,
         recentTracks.map(x => {
@@ -161,9 +182,12 @@ class Music{
           track.description = x.description
           track.thumbnail = x.thumbnail
           track.duration = x.duration
+          track.durationMs = x.durationMs
           track.url = x.url
+          track.expireStreamUrl = x.expireStreamUrl
           track.source = x.source || 'youtube'
           track.streamUrl = x.url
+          track.related = x.related || []
           return track
         }),
         true
@@ -224,7 +248,9 @@ class Music{
     this._startTrack(message, true)
   }
   _handleOnTrackError(message, queue, err){
-    this.utils.discord.deletePlayingMessage(message, queue)
+    if (typeof message !== 'string') {
+      this.utils.discord.deletePlayingMessage(message, queue)
+    }
     console.log(err)
     if (!queue) return
     const track = queue.tracks.shift()
@@ -236,52 +262,9 @@ class Music{
     if (query instanceof Track) return query
     if (query instanceof Playlist) return query
 
-    const type = this.utils.urlType(query)
-    let info,search,track,playlist = undefined
-    switch (type) {
-      case 'spotify_song':
-        info = await Spotify.getData(query)
-        if (!info) return
-        return new Track(message, info, 'spotify')
-      case 'youtube_video':
-        info = await Youtube.getVideo(query)
-        if (!info) return
-        return new Track(message, info, 'youtube')
-      case 'spotify_album':
-      case 'spotify_playlist':
-        playlist = new Playlist()
-        info = await Spotify.getTracks(query)
-        if (!info) return
-        if (info.type === 'playlist') {
-          info = info.track
-        }
-        playlist.tracks = info.map(i => new Track(message, i, 'spotify'))
-        playlist.duration = playlist.tracks?.reduce((a, c) => a + (c.durationMS || 0), 0) || 0
-        playlist.thumbnail = info[0] ? info[0].album? info[0].album.images[0]? info[0].album.images[0].url: null: null : null
-        playlist.title = info.title || info.name || null
-        playlist.user = message.author
-        return playlist
-      case 'youtube_playlist':
-        search = await Youtube.getPlaylist(query)
-        if (!search) return
-        playlist = new Playlist()
-        playlist.tracks = search.videos.map(i => new Track(message, i, 'youtube'))
-        playlist.duration = search.videos.reduce((a,c) => a + c.durationMS, 0)
-        playlist.thumbnail = search.thumbnail || search.videos[0].thumbnail || null
-        playlist.user = message.author
-        return playlist
-      case 'attachment':
-        track = new Track(message, {}, 'attachment')
-        track.url = this.streamUrl = query
-        track.source = type
-        track.user = message.author
-        return track
-      default:
-        if (withSearch) return await this._searchTracks(message, query).catch(e => console.log(e))
-        search = await Youtube.searchOne(query,'video')
-        if (!search) return
-        return new Track(message, search, 'youtube')
-    }
+    if (withSearch) return await this._searchTracks(message, query).catch(e => console.log(e))
+    const result = await this.utils.track.resolveQuery(message, query)
+    return result
   }
   _searchTracks(message, query) {
     return new Promise(async (resolve) => {
@@ -321,12 +304,14 @@ class Music{
     if (this._queue(message)) return this._addTrackToQueue(message, track)
     return this._createQueue(message, track)
   }
-  _handlePlaylist(message, playlist, withShuffle = false){
+  _handlePlaylist(message, playlist){
     if (Array.isArray(playlist) && !playlist.length) return
     if (playlist instanceof Playlist && !playlist.tracks.length) return
     let tracks = Array.isArray(playlist) ? playlist: playlist.tracks
-    tracks = ArrayShuffle(tracks)
     let queue = this._queue(message)
+    if (playlist instanceof Playlist) {
+      this.utils.discord.sendPlaylistMessage(message, playlist)
+    }
     if (queue){
       this._addTracksToQueue(message, tracks)
     }else{
@@ -338,12 +323,13 @@ class Music{
   }
   async _createStream(queue){
     const track = queue.tracks[0]
-    let streamOptions = this.utils.config.streamConfigs
     if (!track.streamUrl){
-      track.streamUrl = await track.searchStreamUrl(this.utils)
+      track.streamUrl = await this.utils.track.streamUrl(track)
     }
-    if (track.source !== 'attachment') return ytdl(await track.streamUrl, streamOptions)
-    const streamUrl = await track.streamUrl
+    if (track.source !== 'attachment' && track.isExpired()) {
+      track.streamUrl = await this.utils.track.streamUrl(track)
+    }
+    const streamUrl = track.streamUrl
     if (!streamUrl && !track.url) return
     return streamUrl
   }
@@ -352,16 +338,16 @@ class Music{
     if (!queue.tracks.length) return this._deleteQueue(message)
     if (queue.stopped) return
     let track = queue.tracks[0]
-    if (!track.streamUrl) return
-    const stream = await this._createStream(queue)
-    if (!stream) {
-      return await this._handleOnTrackError(message, queue, {})
-    }
-    
+
     if (withMessage) {
       queue.playingMessage = this.utils.discord.sendPlayingMessage(message, track, queue)
     }
 
+    const stream = await this._createStream(queue)
+    if (!stream) {
+      return await this._handleOnTrackError(message, queue, {})
+    }
+    if (!track.streamUrl) return
     let options = this.client.utils.config.discordSpeakConfigs
     options.seek = queue.beginTime
     options.volume = queue.volume / 100
@@ -375,6 +361,8 @@ class Music{
     }
     // if (queue.currentStream) queue.currentStream.destroy()
     // queue.currentStream = stream
+    if (!message.client) message.client = this.client
+    this.utils.discord.save(message, {queue: queue.saveInfo()})
     queue.playing = true
     queue.playingId = track.id
   }
@@ -413,18 +401,34 @@ class Music{
     const queue = this._queue(message)
     if (!Array.isArray(tracks) || !tracks.length) return
     queue.tracks.push(...tracks)
-    this.utils.discord.sendEmbedMessage(
-      message,
-      {description: `Queued [${tracks[0].title}](${tracks[0].url}) and ${tracks.length-1} mores [<@${message.author.id}>]`}
-    )
     return queue
   }
   _deleteQueue(message){
     const queue = this._queue(message)
     if (!queue) return
     if (queue.dispatcher) queue.dispatcher.destroy()
-    if (queue.stream) queue.stream.destroy()
+    // if (queue.stream) queue.stream.destroy()
+    this.client.server.update({guildId: message.guild.id}, {$set:{queue:null}})
     return this.queues.delete(message.guild.id)
+  }
+  async _handleOnWakeUp(client) {
+    const servers = await client.server.find()
+    const serversRecovery = servers.filter(p => p.queue && p.queue.playing && p.voiceChannelId)
+    if (serversRecovery.length) console.log(`[BOT] Check and Restore server data (${serversRecovery.length}) server.`)
+    serversRecovery.forEach(async (server) => {
+      const voiceChannel = client.channels.cache.get(server.voiceChannelId)
+      if (!voiceChannel) return
+
+      const newQueue = new Queue({guild: {id: server.guildId}, voiceChannelId: server.voiceChannelId, channelId: server.channelId})
+      newQueue.import({
+        guild: {id: server.guildId},
+        client
+      }, server.queue)
+      newQueue.connection = await voiceChannel.join()
+      this.queues.set(server.guildId, newQueue)
+
+      this._startTrack({guild: {id: server.guildId}})
+    })
   }
 }
 

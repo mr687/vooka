@@ -1,10 +1,14 @@
 const hasPrefix = (message) => {
   if (!message.content) return
   const guild = message.guild
+  let prefix = guild.prefix || 
+  message.client.env.DISCORD_PREFIX || 
+  '-'
+  if (message.client.user.tag.includes('Dev')) {
+    prefix = '*'
+  }
   const check = message.content
-  .startsWith(guild.prefix || 
-    message.client.env.DISCORD_PREFIX || 
-    '-')
+  .startsWith(prefix)
   return check 
 }
 
@@ -18,6 +22,7 @@ const valid = (message) => {
           commands.find(cmd => cmd.aliases &&
             cmd.aliases.includes(commandName))
   if (!command) return
+  message.client.utils.discord.save(message, {lastCommand: command})
   return {command,args}
 }
 

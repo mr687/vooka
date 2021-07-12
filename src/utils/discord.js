@@ -1,9 +1,11 @@
 const {MessageEmbed, Client, Message} = require('discord.js')
 const commands = require('../commands')
-const database = require('../lib/database')
+const {database, tables} = require('../lib/database')
 const tts = require('../lib/tts')
 const Music = require('../lib/music')
 const utils = require('./index')
+
+require('dotenv').config()
 
 const sendMessage = async (message, body) => {
   return await message.channel.send(body)
@@ -63,6 +65,23 @@ module.exports.sendFormatMessage = async(message, format='javascript', content=n
     `\`\`\`${format}\n${content}\`\`\``
   )
 }
+module.exports.sendPlaylistMessage = async(message, playlist) => {
+  let fields = []
+  if (playlist.title) fields.push({name: 'Title', value: playlist.title, inline: true})
+  if (playlist.tracks.length) fields.push({name: 'Video Count', value: playlist.tracks.length, inline: true})
+  if (playlist.duration) fields.push({name: 'Duration', value: playlist.duration, inline: true})
+  if (playlist.url) fields.push({name: 'Link', value: playlist.url})
+  if (playlist.user) fields.push({name: 'Request By', value: `<@${playlist.user.id}>`})
+  return await utils.discord.sendEmbedMessage(
+    message,
+    {
+      title: 'Added Playlist',
+      fields,
+      thumbnail: playlist.thumbnail? playlist.thumbnail:null
+    }
+  )
+}
+
 module.exports.prepare = async (o) => {
   if (o instanceof Client) {
     o.commands = commands
@@ -70,13 +89,10 @@ module.exports.prepare = async (o) => {
     o.env = process.env
     o.lib = {tts,music: new Music(o)}
     return await database.respawn(async (db) => {
-      o.db = db
-      o.server = await db.get('server');
-      o.pendingReactions = await db.get('pending_reactions')
-      o.recentTracks = await db.get('recent_tracks')
-      o.pendingReactions.createIndex({guildId: 1})
-      o.recentTracks.createIndex({id: 1}, {unique: true})
-      o.server.createIndex({guildId: 1},{unique: true})
+      o.db = db.conn
+      o.server = db.server
+      o.pendingReactions = db.pendingReactions
+      o.recentTracks = db.recentTracks
     })
   }
 
@@ -89,11 +105,11 @@ module.exports.prepare = async (o) => {
   }
   return
 }
-module.exports.save = async (message) => {
+module.exports.save = async (message, data = null) => {
   const client = message.client
   try {
     const guild = await client.server.findOne({guildId: message.guild.id})
-    if (!guild)
+    if (!guild) {
       return await client.server.insert({
         guildId: message.guild.id,
         prefix: client.env.DISCORD_PREFIX || '-',
@@ -103,6 +119,9 @@ module.exports.save = async (message) => {
         lastCommand: message.guild.lastCommand || null,
         queue: null
       })
+    }else if(data){
+      return await client.server.update({guildId: message.guild.id},{$set:data})
+    }
   } catch (error) {
     throw error
   }
