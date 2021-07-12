@@ -9,7 +9,7 @@ class Track{
       (track.artists&&track.artists[0]? track.artists[0].name: null) || 'Unknown'
     this.title = track.title || track.title || track.name || null
     this.description = track.description || track.description || null
-    this.thumbnail = (typeof track.thumbnail === 'string')? track.thumbnail:null || track.thumbnail? track.thumbnail.displayThumbnailURL(): null ||
+    this.thumbnail = (typeof track.thumbnail === 'string')? track.thumbnail:null || track.thumbnail? track.thumbnail.url: null ||
       (track.thumbnail? track.thumbnail.url: null) || 
         track.album&&track.album.images[0]? track.album.images[0].url: null || null
     this.duration = track.duration? buildTimeCode(parseMs(track.duration || track.durationMs)): null ||
