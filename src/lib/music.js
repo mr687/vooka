@@ -211,7 +211,7 @@ class Music extends EventEmitter{
   showQueue(message) {
     const queue = this._queue(message)
     if (!queue) return
-    const tracks = queue.tracks
+    const tracks = queue.tracks.slice(0, 20)
 
     let fields = tracks.map(track => {
       return {
