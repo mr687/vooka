@@ -39,9 +39,25 @@ class Music extends EventEmitter{
   async playSearch(message, query) {
     try {
       return this._handleTrack(message, 
-        await this._resolveTrack(message, query, true))
+        await this._resolveTrack(message, query, {withSearch: true}))
     } catch (e) {
       this.emit(this.events.ERROR, e)
+    }
+  }
+  async playRadio(message, query) {
+    if (!query) return
+    if (this.utils.isUrl(query)) {
+      try {
+        return this._handleTrack(message, 
+          await this._resolveTrack(message, query, {radio: true}))
+      } catch (e) {
+        this.emit(this.events.ERROR, e)
+      }
+    }else{
+      return await this.utils.discord.sendEmbedMessage(
+        message,
+        {description: this.utils.strings.INVALID_RADIO_PARAMS}
+      )
     }
   }
   stop(message){
@@ -215,7 +231,7 @@ class Music extends EventEmitter{
 
     let fields = tracks.map(track => {
       return {
-        name: `${queue.playingId === track.id? '▶️ ': ''}${track.title} [${track.duration}]` || 'No Title',
+        name: `${queue.playingId === track.id? '▶️ ': ''}${track.title ?? 'Unknown'} [${track.source==='radio'? 'Radio' : (track.duration ?? '00:00')}]` || 'No Title',
         value: track.url || ''
       }
     })
@@ -258,12 +274,12 @@ class Music extends EventEmitter{
     this.stop(mesage)
     return this._deleteQueue(message)
   }
-  async _resolveTrack(message, query, withSearch = false){
+  async _resolveTrack(message, query, opts){
     if (query instanceof Track) return query
     if (query instanceof Playlist) return query
 
-    if (withSearch) return await this._searchTracks(message, query).catch(e => console.log(e))
-    const result = await this.utils.track.resolveQuery(message, query)
+    if (opts.withSearch) return await this._searchTracks(message, query).catch(e => console.log(e))
+    const result = await this.utils.track.resolveQuery(message, query, opts)
     return result
   }
   _searchTracks(message, query) {
