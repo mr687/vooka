@@ -8,7 +8,6 @@ const utils = require('./index')
 require('dotenv').config()
 
 const sendMessage = async (message, body) => {
-  if (!message.guild.me.hasPermission('SEND_MESSAGES')) return null
   return await message.channel.send(body)
 }
 module.exports.sendReaction = async(message, emoji) => {
