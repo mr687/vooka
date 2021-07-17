@@ -274,7 +274,7 @@ class Music extends EventEmitter{
     this.stop(mesage)
     return this._deleteQueue(message)
   }
-  async _resolveTrack(message, query, opts){
+  async _resolveTrack(message, query, opts = {}){
     if (query instanceof Track) return query
     if (query instanceof Playlist) return query
 
@@ -353,6 +353,15 @@ class Music extends EventEmitter{
     const queue = this._queue(message)
     if (!queue.tracks.length) return this._deleteQueue(message)
     if (queue.stopped) return
+
+    if (!queue.connection.channel.permissionsFor(this.client.user).has('SPEAK')) {
+      this._deleteQueue(message)
+      return this.utils.discord.sendEmbedMessage(
+        message,
+        {description: this.utils.strings.NO_PERMISSION_SPEAK}
+      )
+    }
+
     let track = queue.tracks[0]
 
     if (withMessage) {
@@ -392,6 +401,12 @@ class Music extends EventEmitter{
       .discord.sendEmbedMessage(message, {
         description: this.client.utils.strings.NO_VOICE_CHANNEL
       })
+    if (!voiceChannel.permissionsFor(this.client.user).has('CONNECT')) {
+      return this.client.utils
+      .discord.sendEmbedMessage(message, {
+        description: this.client.utils.strings.NO_PERMISSION_VOICE_CHANNEL
+      })
+    }
     const queue = new Queue(message, track)
     this.queues.set(queue.id, queue)
     voiceChannel
@@ -434,7 +449,9 @@ class Music extends EventEmitter{
     serversRecovery.forEach(async (server) => {
       const voiceChannel = client.channels.cache.get(server.voiceChannelId)
       if (!voiceChannel) return
-
+      if (!voiceChannel.permissionsFor(client.user).has('CONNECT')) {
+        return
+      }
       const newQueue = new Queue({guild: {id: server.guildId}, voiceChannelId: server.voiceChannelId, channelId: server.channelId})
       newQueue.import({
         guild: {id: server.guildId},

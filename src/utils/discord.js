@@ -8,6 +8,7 @@ const utils = require('./index')
 require('dotenv').config()
 
 const sendMessage = async (message, body) => {
+  if (!message.guild.me.hasPermission('SEND_MESSAGES')) return null
   return await message.channel.send(body)
 }
 module.exports.sendReaction = async(message, emoji) => {
@@ -31,6 +32,7 @@ module.exports.sendEmbedMessage = async(message, options) => {
   )
 }
 module.exports.deletePlayingMessage = async(message, queue) => {
+  if (!message.guild.me.hasPermission('MANAGE_MESSAGES')) return
   try {
     if (queue.playingMessage !== null) {
       const playingMessage = await queue.playingMessage
@@ -133,6 +135,18 @@ module.exports.leaveVoiceChannel = async(message) => {
 }
 module.exports.speak = (message, options = {}) => {
   if (!options && !options.url) return
+  if (!message.guild.me.hasPermission('CONNECT')) {
+    return this.utils
+    .discord.sendEmbedMessage(message, {
+      description: this.utils.strings.NO_PERMISSION_VOICE_CHANNEL
+    })
+  }
+  if (!message.guild.me.hasPermission('SPEAK')) {
+    return this.utils.discord.sendEmbedMessage(
+      message,
+      {description: this.utils.strings.NO_PERMISSION_SPEAK}
+    )
+  }
   return new Promise(async (resolve) => {
     if (options.connection) {
       options.connection.play(options.url, message.client.utils.config.discordSpeakConfigs)

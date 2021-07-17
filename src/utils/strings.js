@@ -10,6 +10,8 @@ module.exports = {
   },
   ALREADY_JOIN: 'Vooka Bot is already join to your voice channel.',
   NO_VOICE_CHANNEL: 'You are not in the voice channel. 😱',
+  NO_PERMISSION_VOICE_CHANNEL: 'Vooka Bot do not have permissions to join the voice channel! 😭',
+  NO_PERMISSION_SPEAK: 'Vooka Bot do not have permissions to speak in the voice channel! 😭',
   GOODBYE_MESSAGE: 'Thank your for using Vooka Bot, see you.',
   NO_PREVIOUS_TRACKS: 'You don\'t have any playlist before. Use **trending** to play spotify trending playlist. 🥂',
   NO_QUEUE: 'Playlist not found! You can play some music with **play** command. 🤝',

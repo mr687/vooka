@@ -17,7 +17,7 @@ const ytinfoBestAudio = (info) => {
   if (!result || !result.url) return
   return result.url
 }
-module.exports.resolveQuery = async (message, query, opts) => {
+module.exports.resolveQuery = async (message, query, opts = {}) => {
   if (query.includes('youtu') && query.includes('list=')) {
     try {
       const splited = query.split(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)
