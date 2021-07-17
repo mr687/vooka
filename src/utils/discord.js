@@ -51,7 +51,7 @@ module.exports.sendPlayingMessage = async(message, track, queue) => {
   return await utils.discord.sendEmbedMessage(
     message,
     {
-      title: 'Now Playing',
+      title: track.source === 'radio' ? 'Now Playing 📻': 'Now Playing 🎧',
       description: track.description,
       fields,
       thumbnail: track.thumbnail? track.thumbnail:null

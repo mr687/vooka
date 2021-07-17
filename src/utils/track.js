@@ -17,7 +17,7 @@ const ytinfoBestAudio = (info) => {
   if (!result || !result.url) return
   return result.url
 }
-module.exports.resolveQuery = async (message, query) => {
+module.exports.resolveQuery = async (message, query, opts) => {
   if (query.includes('youtu') && query.includes('list=')) {
     try {
       const splited = query.split(/^.*(youtu.be\/|list=)([^#\&\?]*).*/)
@@ -62,9 +62,21 @@ module.exports.resolveQuery = async (message, query) => {
       playlist.user = message.author
       return playlist
     case 'attachment':
+      const checkUrl = await message.client.utils.isHostAlive(query)
+      if (!checkUrl){
+        await message.client.utils
+          .discord.sendEmbedMessage(message, {description: 'Url invalid!'})
+        return null
+      }
+
       track = new Track(message, {}, 'attachment')
-      track.url = query
       track.source = type
+
+      if (opts.radio) {
+        track = new Track(message, {}, 'radio')
+        track.source = 'radio'
+      }
+      track.url = query
       track.user = message.author
       return track
     default:

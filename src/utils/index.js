@@ -1,5 +1,6 @@
 const Youtube = require('youtube-sr').default
 const FindLyrics = require('findlyrics')
+const request = require('request')
 
 const spotifySongRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:track\/|\?uri=spotify:track:)((\w|-){22})/;
 const spotifyPlaylistRegex = /https?:\/\/(?:embed\.|open\.)(?:spotify\.com\/)(?:playlist\/|\?uri=spotify:playlist:)((\w|-){22})/;
@@ -70,4 +71,16 @@ module.exports.searchLyrics = async (query) => {
 module.exports.stringLimit = (str, limit = 0, end='...') => {
   if (str.length <= limit) return str
   return str.substring(0, limit).concat(end)
+}
+module.exports.isHostAlive = (host) => {
+  if (!host) return false
+  return new Promise(resolve => {
+    const req = request(host)
+    req.on('response', (res) => {
+      if ([200,201,202].includes(res.statusCode)) return resolve(true)
+    })
+    req.on('error', (e) => {
+      return resolve(false)
+    })
+  })
 }

@@ -15,4 +15,5 @@ module.exports = {
   NO_QUEUE: 'Playlist not found! You can play some music with **play** command. 🤝',
   PARAM_NOT_NUMBER: 'Parameter <second> must be number.',
   WRONG_REACTION: 'You reacted with neither a arrow up, nor a arrow down.',
+  INVALID_RADIO_PARAMS: 'Acctually, **Vooka Bot** only allow radio URL for now. You can search with [-radio search <name>] instead.'
 }
