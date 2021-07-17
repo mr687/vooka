@@ -32,7 +32,6 @@ module.exports.sendEmbedMessage = async(message, options) => {
   )
 }
 module.exports.deletePlayingMessage = async(message, queue) => {
-  if (!message.guild.me.hasPermission('MANAGE_MESSAGES')) return
   try {
     if (queue.playingMessage !== null) {
       const playingMessage = await queue.playingMessage
