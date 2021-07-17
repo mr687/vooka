@@ -1,6 +1,6 @@
 {
   "name": "vooka",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Discord Music Bot",
   "main": "src/index.js",
   "scripts": {
@@ -18,14 +18,14 @@
   "dependencies": {
     "@discordjs/opus": "^0.5.3",
     "array-shuffle": "^2.0.0",
-    "cards": "^1.1.0",
     "cheerio": "^1.0.0-rc.10",
     "discord.js": "^12.5.3",
+    "dotenv": "^10.0.0",
     "findlyrics": "github:mr687/findlyrics",
     "monk": "^7.3.4",
     "nanoid": "^3.1.23",
-    "npm": "^7.19.0",
     "opusscript": "^0.0.8",
+    "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "spotify-url-info": "^2.2.3",
     "user-agents": "^1.0.711",
@@ -34,7 +34,6 @@
     "ytdl-getinfo": "^1.1.0"
   },
   "devDependencies": {
-    "dotenv": "^10.0.0",
     "mocha": "^9.0.2"
   }
 }
